@@ -1,0 +1,25 @@
+{
+  "name": "get_weather",
+  "description": "Fetches the weather in the given location",
+  "strict": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "location": {
+        "type": "string",
+        "description": "The location to get the weather for"
+      },
+      "temperature": {
+        "type": "number",
+        "description": "The temperature"
+      },
+      "unit": {
+        "type": "string",
+        "description": "The unit to return the temperature in",
+        "enum": ["F", "C"]
+      }
+    },
+    "additionalProperties": false,
+    "required": ["location", "temperature", "unit"]
+  }
+}
