@@ -11,18 +11,18 @@ external dependencies required.
 ## Structure
 
 ```
-├── cmd/                # Command-line interfaces
-│   ├── anthropic/      # Anthropic CLI
-│   └── openai/         # OpenAI CLI
-├── anthropic/          # Anthropic (Claude) API package
-│   ├── chat.go         # API implementation
-│   └── README.md       # Usage examples
-├── openai/             # OpenAI API package
-│   ├── chat.go         # API implementation
-│   └── README.md       # Usage examples
-├── docs/               # API documentation
-├── examples/           # Example JSON schemas
-└── errors.go           # Structured error types
+├── cmd/                    # Command-line interfaces
+│   ├── llmkit-anthropic/   # Anthropic CLI
+│   └── llmkit-openai/      # OpenAI CLI
+├── anthropic/              # Anthropic (Claude) API package
+│   ├── chat.go             # API implementation
+│   └── README.md           # Usage examples
+├── openai/                 # OpenAI API package
+│   ├── chat.go             # API implementation
+│   └── README.md           # Usage examples
+├── docs/                   # API documentation
+├── examples/               # Example JSON schemas
+└── errors.go               # Structured error types
 ```
 
 ## Installation
@@ -33,16 +33,25 @@ Install the command-line tools globally:
 
 ```bash
 # Install Anthropic CLI
-go install github.com/aktagon/llmkit/cmd/anthropic@latest
+go install github.com/aktagon/llmkit/cmd/llmkit-anthropic@latest
 
 # Install OpenAI CLI
-go install github.com/aktagon/llmkit/cmd/openai@latest
+go install github.com/aktagon/llmkit/cmd/llmkit-openai@latest
 ```
 
 Make sure your `$GOPATH/bin` is in your `$PATH` to use the installed binaries:
 
 ```bash
 export PATH=$PATH:$(go env GOPATH)/bin
+```
+
+**Check installation location:**
+```bash
+# See where Go installs binaries
+echo $(go env GOPATH)/bin
+
+# List installed llmkit tools
+ls -la $(go env GOPATH)/bin/llmkit-*
 ```
 
 ### Use as Library
@@ -58,23 +67,20 @@ go get github.com/aktagon/llmkit
 ### Anthropic
 
 **Using installed CLI:**
-
 ```bash
 export ANTHROPIC_API_KEY="your-key"
-anthropic "You are helpful" "Hello Claude"
+llmkit-anthropic "You are helpful" "Hello Claude"
 ```
 
 **Using go run:**
-
 ```bash
 export ANTHROPIC_API_KEY="your-key"
-go run cmd/anthropic/main.go "You are helpful" "Hello Claude"
+go run cmd/llmkit-anthropic/main.go "You are helpful" "Hello Claude"
 ```
 
 **Structured output:**
-
 ```bash
-anthropic \
+llmkit-anthropic \
   "You are an expert at structured data extraction." \
   "What's the weather like in San Francisco? I prefer Celsius." \
   "$(cat examples/openai/schemas/weather-schema.json)"
@@ -83,23 +89,20 @@ anthropic \
 ### OpenAI
 
 **Using installed CLI:**
-
 ```bash
 export OPENAI_API_KEY="your-key"
-openai "You are helpful" "Hello GPT"
+llmkit-openai "You are helpful" "Hello GPT"
 ```
 
 **Using go run:**
-
 ```bash
 export OPENAI_API_KEY="your-key"
-go run cmd/openai/main.go "You are helpful" "Hello GPT"
+go run cmd/llmkit-openai/main.go "You are helpful" "Hello GPT"
 ```
 
 **Structured output:**
-
 ```bash
-openai \
+llmkit-openai \
   "You are an expert at structured data extraction." \
   "What's the weather like in San Francisco? I prefer Celsius." \
   "$(cat examples/openai/schemas/weather-schema.json)"
@@ -116,7 +119,7 @@ import (
     "fmt"
     "log"
     "os"
-
+    
     "github.com/aktagon/llmkit/anthropic"
     "github.com/aktagon/llmkit/openai"
 )
@@ -125,8 +128,8 @@ func main() {
     // Anthropic example
     anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
     response, err := anthropic.Chat(
-        "You are a helpful assistant",
-        "What is the capital of France?",
+        "You are a helpful assistant", 
+        "What is the capital of France?", 
         "", // no schema for simple chat
         anthropicKey,
     )
@@ -134,8 +137,8 @@ func main() {
         log.Fatal(err)
     }
     fmt.Println("Anthropic:", response)
-
-    // OpenAI example
+    
+    // OpenAI example  
     openaiKey := os.Getenv("OPENAI_API_KEY")
     response, err = openai.Chat(
         "You are a helpful assistant",
@@ -159,6 +162,7 @@ import (
     "fmt"
     "log"
     "os"
+    
     "github.com/aktagon/llmkit/openai"
 )
 
@@ -178,7 +182,7 @@ func main() {
             "additionalProperties": false
         }
     }`
-
+    
     response, err := openai.Chat(
         "You are a weather assistant.",
         "What's the weather in Tokyo? Use Celsius.",
@@ -188,7 +192,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-
+    
     fmt.Println(response)
 }
 ```
@@ -196,10 +200,11 @@ func main() {
 ## Features
 
 - Standard chat completions
-- Structured output with **minimal** JSON schema validation/support
+- Structured output with JSON schema validation/support
 - Pure Go standard library implementation
 - Command-line interface
-- API for usage in Go projects
+- Structured error types for better error handling
+- Programmatic API for library usage
 
 ## Error Handling
 
@@ -226,3 +231,5 @@ if err != nil {
     return
 }
 ```
+
+Each provider directory contains detailed examples and usage instructions.
