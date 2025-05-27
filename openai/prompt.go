@@ -145,8 +145,8 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 	return string(bodyText), nil
 }
 
-// Chat sends a chat completion request to OpenAI API
-func Chat(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
+// Prompt sends a prompt request to OpenAI API
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
 	if apiKey == "" {
 		return "", &llmkit.ValidationError{
 			Field:   "apiKey",

@@ -36,10 +36,10 @@ import (
 func main() {
     apiKey := os.Getenv("OPENAI_API_KEY")
 
-    response, err := openai.Chat(
+    response, err := openai.Prompt(
         "You are a helpful assistant",
         "What is the capital of France?",
-        "", // no schema for simple chat
+        "", // no schema for simple prompt
         apiKey,
     )
     if err != nil {
@@ -215,7 +215,7 @@ go run cmd/openai/main.go \
 **Programmatic Request:**
 
 ```go
-response, err := openai.Chat(
+response, err := openai.Prompt(
     "You are a helpful assistant.",
     "What is the capital of France?",
     "",
@@ -241,7 +241,7 @@ go run cmd/openai/main.go \
 ```go
 schema := `{"name": "book_extraction", "description": "Extracts book information", "strict": true, "schema": {"type": "object", "properties": {"title": {"type": "string"}, "author": {"type": "string"}}, "required": ["title", "author"], "additionalProperties": false}}`
 
-response, err := openai.Chat(
+response, err := openai.Prompt(
     "You are an expert at structured data extraction.",
     "Extract the author and title from: 'The Great Gatsby by F. Scott Fitzgerald'",
     schema,
@@ -263,7 +263,7 @@ When using structured output, the JSON schema must include:
 The package returns structured errors that can be handled appropriately:
 
 ```go
-response, err := openai.Chat(systemPrompt, userPrompt, schema, apiKey)
+response, err := openai.Prompt(systemPrompt, userPrompt, schema, apiKey)
 if err != nil {
     switch e := err.(type) {
     case *llmkit.APIError:

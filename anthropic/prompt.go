@@ -136,8 +136,8 @@ func call(endpoint, apiKey string, requestBody string) (string, error) {
 	return string(bodyText), nil
 }
 
-// Chat sends a chat completion request to Anthropic API
-func Chat(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
+// Prompt sends a prompt request to Anthropic API
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
 	if apiKey == "" {
 		return "", &llmkit.ValidationError{
 			Field:   "apiKey",
