@@ -1,4 +1,4 @@
-# LLM API Examples in Go
+# LLM Kit
 
 Minimal Go library for calling LLM APIs using only the standard library - no
 external dependencies required.
@@ -46,6 +46,7 @@ export PATH=$PATH:$(go env GOPATH)/bin
 ```
 
 **Check installation location:**
+
 ```bash
 # See where Go installs binaries
 echo $(go env GOPATH)/bin
@@ -67,18 +68,21 @@ go get github.com/aktagon/llmkit
 ### Anthropic
 
 **Using installed CLI:**
+
 ```bash
 export ANTHROPIC_API_KEY="your-key"
 llmkit-anthropic "You are helpful" "Hello Claude"
 ```
 
 **Using go run:**
+
 ```bash
 export ANTHROPIC_API_KEY="your-key"
 go run cmd/llmkit-anthropic/main.go "You are helpful" "Hello Claude"
 ```
 
 **Structured output:**
+
 ```bash
 llmkit-anthropic \
   "You are an expert at structured data extraction." \
@@ -89,18 +93,21 @@ llmkit-anthropic \
 ### OpenAI
 
 **Using installed CLI:**
+
 ```bash
 export OPENAI_API_KEY="your-key"
 llmkit-openai "You are helpful" "Hello GPT"
 ```
 
 **Using go run:**
+
 ```bash
 export OPENAI_API_KEY="your-key"
 go run cmd/llmkit-openai/main.go "You are helpful" "Hello GPT"
 ```
 
 **Structured output:**
+
 ```bash
 llmkit-openai \
   "You are an expert at structured data extraction." \
@@ -119,7 +126,7 @@ import (
     "fmt"
     "log"
     "os"
-    
+
     "github.com/aktagon/llmkit/anthropic"
     "github.com/aktagon/llmkit/openai"
 )
@@ -128,8 +135,8 @@ func main() {
     // Anthropic example
     anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
     response, err := anthropic.Chat(
-        "You are a helpful assistant", 
-        "What is the capital of France?", 
+        "You are a helpful assistant",
+        "What is the capital of France?",
         "", // no schema for simple chat
         anthropicKey,
     )
@@ -137,8 +144,8 @@ func main() {
         log.Fatal(err)
     }
     fmt.Println("Anthropic:", response)
-    
-    // OpenAI example  
+
+    // OpenAI example
     openaiKey := os.Getenv("OPENAI_API_KEY")
     response, err = openai.Chat(
         "You are a helpful assistant",
@@ -162,7 +169,7 @@ import (
     "fmt"
     "log"
     "os"
-    
+
     "github.com/aktagon/llmkit/openai"
 )
 
@@ -182,7 +189,7 @@ func main() {
             "additionalProperties": false
         }
     }`
-    
+
     response, err := openai.Chat(
         "You are a weather assistant.",
         "What's the weather in Tokyo? Use Celsius.",
@@ -192,7 +199,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    
+
     fmt.Println(response)
 }
 ```

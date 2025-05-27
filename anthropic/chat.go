@@ -10,21 +10,6 @@ import (
 	"github.com/aktagon/llmkit"
 )
 
-const (
-	Endpoint         = "https://api.anthropic.com/v1/messages"
-	Model            = "claude-sonnet-4-20250514"
-	AnthropicVersion = "2023-06-01"
-	MaxTokens        = 4096
-)
-
-// JsonSchema represents the JSON schema structure
-type JsonSchema struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Strict      bool        `json:"strict"`
-	JsonSchema  interface{} `json:"schema"`
-}
-
 // validateSchema checks if the provided JSON schema has required top-level attributes
 func validateSchema(schemaStr string) (*JsonSchema, error) {
 	var schema JsonSchema

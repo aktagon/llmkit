@@ -9,52 +9,6 @@ import (
 	"github.com/aktagon/llmkit"
 )
 
-const (
-	Model               = "gpt-4o-2024-08-06"
-	EndpointResponses   = "https://api.openai.com/v1/responses"
-	EndpointCompletions = "https://api.openai.com/v1/chat/completions"
-)
-
-// JsonSchema represents the JSON schema format for structured output
-type JsonSchema struct {
-	Type   string      `json:"type"`
-	Name   string      `json:"name"`
-	Schema interface{} `json:"schema"`
-	Strict bool        `json:"strict"`
-}
-
-// TextFormat represents the text format configuration
-type TextFormat struct {
-	Format JsonSchema `json:"format"`
-}
-
-// Message represents a chat message
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-// ChatRequest represents a standard chat completion request
-type ChatRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
-}
-
-// StructuredRequest represents a structured output request
-type StructuredRequest struct {
-	Model string     `json:"model"`
-	Input []Message  `json:"input"`
-	Text  TextFormat `json:"text"`
-}
-
-// SchemaValidation represents the expected schema structure
-type SchemaValidation struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Strict      bool        `json:"strict"`
-	Schema      interface{} `json:"schema"`
-}
-
 // validateSchema validates that the JSON schema has required top-level attributes
 func validateSchema(schemaJSON string) (SchemaValidation, error) {
 	var schema SchemaValidation
