@@ -15,10 +15,10 @@ external dependencies required.
 │   ├── llmkit-anthropic/   # Anthropic CLI
 │   └── llmkit-openai/      # OpenAI CLI
 ├── anthropic/              # Anthropic (Claude) API package
-│   ├── chat.go             # API implementation
+│   ├── prompt.go           # API implementation
 │   └── README.md           # Usage examples
 ├── openai/                 # OpenAI API package
-│   ├── chat.go             # API implementation
+│   ├── prompt.go           # API implementation
 │   └── README.md           # Usage examples
 ├── docs/                   # API documentation
 ├── examples/               # Example JSON schemas
@@ -134,10 +134,10 @@ import (
 func main() {
     // Anthropic example
     anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
-    response, err := anthropic.Chat(
+    response, err := anthropic.Prompt(
         "You are a helpful assistant",
         "What is the capital of France?",
-        "", // no schema for simple chat
+        "", // no schema for simple prompt
         anthropicKey,
     )
     if err != nil {
@@ -147,10 +147,10 @@ func main() {
 
     // OpenAI example
     openaiKey := os.Getenv("OPENAI_API_KEY")
-    response, err = openai.Chat(
+    response, err = openai.Prompt(
         "You are a helpful assistant",
         "What is the capital of France?",
-        "", // no schema for simple chat
+        "", // no schema for simple prompt
         openaiKey,
     )
     if err != nil {
@@ -190,7 +190,7 @@ func main() {
         }
     }`
 
-    response, err := openai.Chat(
+    response, err := openai.Prompt(
         "You are a weather assistant.",
         "What's the weather in Tokyo? Use Celsius.",
         schema,
@@ -223,7 +223,7 @@ The library provides structured error types:
 - `SchemaError` - JSON schema validation errors
 
 ```go
-response, err := openai.Chat(systemPrompt, userPrompt, schema, apiKey)
+response, err := openai.Prompt(systemPrompt, userPrompt, schema, apiKey)
 if err != nil {
     switch e := err.(type) {
     case *llmkit.APIError:
