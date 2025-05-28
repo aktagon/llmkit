@@ -58,11 +58,23 @@ type Message struct {
 	Content []Content `json:"content"`
 }
 
+// Usage represents token usage information
+type Usage struct {
+	InputTokens              int `json:"input_tokens"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+	OutputTokens             int `json:"output_tokens"`
+	ServiceTier              string `json:"service_tier"`
+}
+
 // AnthropicResponse represents the API response structure
 type AnthropicResponse struct {
 	ID         string    `json:"id"`
+	Type       string    `json:"type"`
 	Model      string    `json:"model"`
 	StopReason string    `json:"stop_reason"`
+	StopSequence *string `json:"stop_sequence"`
 	Role       string    `json:"role"`
 	Content    []Content `json:"content"`
+	Usage      Usage     `json:"usage"`
 }
