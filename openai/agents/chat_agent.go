@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aktagon/llmkit"
+	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/openai"
 )
 
@@ -35,7 +35,7 @@ type ChatOptions struct {
 
 // ChatResponse contains both extracted text and full raw response
 type ChatResponse struct {
-	Text string         // Extracted text response
+	Text string           // Extracted text response
 	Raw  *openai.Response // Full API response
 }
 
@@ -44,17 +44,17 @@ type ChatAgent struct {
 	client     *http.Client
 	apiKey     string
 	model      string
-	messages   []openai.Message          // Conversation memory
-	memory     map[string]string         // Persistent key-value memory
+	messages   []openai.Message  // Conversation memory
+	memory     map[string]string // Persistent key-value memory
 	tools      map[string]openai.Tool
-	memoryMode MemoryMode                // Controls memory behavior
-	memoryFile string                    // Path for memory persistence
+	memoryMode MemoryMode // Controls memory behavior
+	memoryFile string     // Path for memory persistence
 }
 
 // New creates a new ChatAgent with optional configuration
 func New(apiKey string, opts ...AgentOption) (*ChatAgent, error) {
 	if apiKey == "" {
-		return nil, &llmkit.ValidationError{
+		return nil, &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}
@@ -108,25 +108,25 @@ func WithMemoryPersistence(filepath string) AgentOption {
 // RegisterTool adds a tool that GPT can use
 func (ca *ChatAgent) RegisterTool(tool openai.Tool) error {
 	if tool.Name == "" {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "name",
 			Message: "tool name is required",
 		}
 	}
 	if tool.Description == "" {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "description",
 			Message: "tool description is required",
 		}
 	}
 	if tool.Parameters == nil {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "parameters",
 			Message: "tool parameters schema is required",
 		}
 	}
 	if tool.Handler == nil {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "handler",
 			Message: "tool handler is required",
 		}
@@ -227,13 +227,13 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 		options = opts[0]
 	}
 	if ca.apiKey == "" {
-		return nil, &llmkit.ValidationError{
+		return nil, &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}
 	}
 	if message == "" {
-		return nil, &llmkit.ValidationError{
+		return nil, &errors.ValidationError{
 			Field:   "message",
 			Message: "message cannot be empty",
 		}
@@ -347,7 +347,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 
 	jsonData, err := json.Marshal(requestBody)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "marshaling request body",
 			Err:       err,
 		}
@@ -355,7 +355,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 
 	req, err := http.NewRequest("POST", openai.EndpointCompletions, strings.NewReader(string(jsonData)))
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "creating request",
 			Err:       err,
 		}
@@ -366,7 +366,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 
 	resp, err := ca.client.Do(req)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "sending request",
 			Err:       err,
 		}
@@ -375,14 +375,14 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "reading response",
 			Err:       err,
 		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, &llmkit.APIError{
+		return nil, &errors.APIError{
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
@@ -392,7 +392,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 
 	var openaiResp openai.Response
 	if err := json.Unmarshal(bodyText, &openaiResp); err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "parsing response",
 			Err:       err,
 		}
@@ -423,7 +423,7 @@ func (ca *ChatAgent) executeToolCalls(toolCalls []openai.FunctionCall) error {
 	for _, toolCall := range toolCalls {
 		tool, exists := ca.tools[toolCall.Name]
 		if !exists {
-			return &llmkit.ValidationError{
+			return &errors.ValidationError{
 				Field:   "tool",
 				Message: fmt.Sprintf("tool '%s' not found", toolCall.Name),
 			}
@@ -432,7 +432,7 @@ func (ca *ChatAgent) executeToolCalls(toolCalls []openai.FunctionCall) error {
 		// Parse arguments from JSON string
 		var arguments map[string]interface{}
 		if err := json.Unmarshal([]byte(toolCall.Arguments), &arguments); err != nil {
-			return &llmkit.RequestError{
+			return &errors.RequestError{
 				Operation: "parsing tool arguments",
 				Err:       err,
 			}

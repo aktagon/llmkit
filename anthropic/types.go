@@ -4,13 +4,13 @@ package anthropic
 const (
 	// Endpoint is the Anthropic API endpoint for chat completions
 	Endpoint = "https://api.anthropic.com/v1/messages"
-	
+
 	// Model is the default Claude model to use
 	Model = "claude-sonnet-4-20250514"
-	
+
 	// AnthropicVersion is the API version header value
 	AnthropicVersion = "2023-06-01"
-	
+
 	// MaxTokens is the default maximum tokens for responses
 	MaxTokens = 4096
 )
@@ -60,21 +60,21 @@ type Message struct {
 
 // Usage represents token usage information
 type Usage struct {
-	InputTokens              int `json:"input_tokens"`
-	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
-	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
-	OutputTokens             int `json:"output_tokens"`
+	InputTokens              int    `json:"input_tokens"`
+	CacheCreationInputTokens int    `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     int    `json:"cache_read_input_tokens"`
+	OutputTokens             int    `json:"output_tokens"`
 	ServiceTier              string `json:"service_tier"`
 }
 
 // AnthropicResponse represents the API response structure
 type AnthropicResponse struct {
-	ID         string    `json:"id"`
-	Type       string    `json:"type"`
-	Model      string    `json:"model"`
-	StopReason string    `json:"stop_reason"`
-	StopSequence *string `json:"stop_sequence"`
-	Role       string    `json:"role"`
-	Content    []Content `json:"content"`
-	Usage      Usage     `json:"usage"`
+	ID           string    `json:"id"`
+	Type         string    `json:"type"`
+	Model        string    `json:"model"`
+	StopReason   string    `json:"stop_reason"`
+	StopSequence *string   `json:"stop_sequence"`
+	Role         string    `json:"role"`
+	Content      []Content `json:"content"`
+	Usage        Usage     `json:"usage"`
 }

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aktagon/llmkit"
+	"github.com/aktagon/llmkit/errors"
 )
 
 func TestValidateSTTInput(t *testing.T) {
@@ -107,7 +107,7 @@ func TestValidateSTTInput(t *testing.T) {
 
 				switch tt.errorType {
 				case "ValidationError":
-					if _, ok := err.(*llmkit.ValidationError); !ok {
+					if _, ok := err.(*errors.ValidationError); !ok {
 						t.Errorf("expected ValidationError but got %T", err)
 					}
 				}
@@ -237,7 +237,7 @@ func TestSpeech2Text_ValidationErrors(t *testing.T) {
 
 			switch tt.errorType {
 			case "ValidationError":
-				if _, ok := err.(*llmkit.ValidationError); !ok {
+				if _, ok := err.(*errors.ValidationError); !ok {
 					t.Errorf("expected ValidationError but got %T: %v", err, err)
 				}
 			}
@@ -283,7 +283,7 @@ func TestSpeech2TextDetailed_ValidationErrors(t *testing.T) {
 
 			switch tt.errorType {
 			case "ValidationError":
-				if _, ok := err.(*llmkit.ValidationError); !ok {
+				if _, ok := err.(*errors.ValidationError); !ok {
 					t.Errorf("expected ValidationError but got %T: %v", err, err)
 				}
 			}

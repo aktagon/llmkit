@@ -26,7 +26,7 @@ func main() {
 		log.Fatal("OPENAI_API_KEY environment variable is required")
 	}
 
-	response, err := openai.Chat(systemPrompt, userPrompt, jsonSchema, apiKey)
+	response, err := openai.Prompt(systemPrompt, userPrompt, jsonSchema, apiKey)
 	if err != nil {
 		log.Fatalf("Error calling OpenAI API: %v", err)
 	}

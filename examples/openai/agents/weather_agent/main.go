@@ -15,7 +15,7 @@ import (
 func mockWeatherAPI(location string, unit string) (string, error) {
 	// Normalize location for consistent responses
 	location = strings.ToLower(strings.TrimSpace(location))
-	
+
 	// Mock weather data for demo purposes
 	weatherData := map[string]map[string]string{
 		"san francisco": {

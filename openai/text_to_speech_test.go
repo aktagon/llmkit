@@ -3,7 +3,7 @@ package openai
 import (
 	"testing"
 
-	"github.com/aktagon/llmkit"
+	"github.com/aktagon/llmkit/errors"
 )
 
 func TestValidateTTSInput(t *testing.T) {
@@ -42,23 +42,23 @@ func TestValidateTTSInput(t *testing.T) {
 			errorType:   "ValidationError",
 		},
 		{
-			name:    "invalid speed too low",
-			input:   "Hello world",
-			options: &TTSOptions{Speed: 0.1},
+			name:        "invalid speed too low",
+			input:       "Hello world",
+			options:     &TTSOptions{Speed: 0.1},
 			expectError: true,
 			errorType:   "ValidationError",
 		},
 		{
-			name:    "invalid speed too high",
-			input:   "Hello world",
-			options: &TTSOptions{Speed: 5.0},
+			name:        "invalid speed too high",
+			input:       "Hello world",
+			options:     &TTSOptions{Speed: 5.0},
 			expectError: true,
 			errorType:   "ValidationError",
 		},
 		{
-			name:    "valid speed range",
-			input:   "Hello world",
-			options: &TTSOptions{Speed: 1.5},
+			name:        "valid speed range",
+			input:       "Hello world",
+			options:     &TTSOptions{Speed: 1.5},
 			expectError: false,
 		},
 	}
@@ -66,16 +66,16 @@ func TestValidateTTSInput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateTTSInput(tt.input, tt.options)
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error but got none")
 					return
 				}
-				
+
 				switch tt.errorType {
 				case "ValidationError":
-					if _, ok := err.(*llmkit.ValidationError); !ok {
+					if _, ok := err.(*errors.ValidationError); !ok {
 						t.Errorf("expected ValidationError but got %T", err)
 					}
 				}
@@ -191,7 +191,7 @@ func TestText2Speech_ValidationErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := Text2Speech(tt.input, tt.apiKey, tt.options)
-			
+
 			if err == nil {
 				t.Error("expected error but got none")
 				return
@@ -199,7 +199,7 @@ func TestText2Speech_ValidationErrors(t *testing.T) {
 
 			switch tt.errorType {
 			case "ValidationError":
-				if _, ok := err.(*llmkit.ValidationError); !ok {
+				if _, ok := err.(*errors.ValidationError); !ok {
 					t.Errorf("expected ValidationError but got %T: %v", err, err)
 				}
 			}

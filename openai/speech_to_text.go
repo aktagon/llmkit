@@ -10,20 +10,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aktagon/llmkit"
+	"github.com/aktagon/llmkit/errors"
 )
 
 // validateSTTInput validates the audio data and options
 func validateSTTInput(audioData []byte, filename string, options *STTOptions) error {
 	if len(audioData) == 0 {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "audioData",
 			Message: "audio data is required",
 		}
 	}
 
 	if strings.TrimSpace(filename) == "" {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "filename",
 			Message: "filename is required",
 		}
@@ -40,7 +40,7 @@ func validateSTTInput(audioData []byte, filename string, options *STTOptions) er
 		}
 	}
 	if !isValid {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "filename",
 			Message: "unsupported audio format. Supported: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, webm",
 		}
@@ -48,7 +48,7 @@ func validateSTTInput(audioData []byte, filename string, options *STTOptions) er
 
 	if options != nil {
 		if options.Temperature < 0 || options.Temperature > 1 {
-			return &llmkit.ValidationError{
+			return &errors.ValidationError{
 				Field:   "temperature",
 				Message: "temperature must be between 0 and 1",
 			}
@@ -66,7 +66,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 	// Add the audio file
 	fileWriter, err := writer.CreateFormFile("file", filename)
 	if err != nil {
-		return nil, "", &llmkit.RequestError{
+		return nil, "", &errors.RequestError{
 			Operation: "creating form file field",
 			Err:       err,
 		}
@@ -74,7 +74,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 
 	_, err = fileWriter.Write(audioData)
 	if err != nil {
-		return nil, "", &llmkit.RequestError{
+		return nil, "", &errors.RequestError{
 			Operation: "writing audio data",
 			Err:       err,
 		}
@@ -85,10 +85,10 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 	if options != nil && options.Model != "" {
 		model = options.Model
 	}
-	
+
 	err = writer.WriteField("model", model)
 	if err != nil {
-		return nil, "", &llmkit.RequestError{
+		return nil, "", &errors.RequestError{
 			Operation: "writing model field",
 			Err:       err,
 		}
@@ -99,7 +99,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 		if options.Language != "" {
 			err = writer.WriteField("language", options.Language)
 			if err != nil {
-				return nil, "", &llmkit.RequestError{
+				return nil, "", &errors.RequestError{
 					Operation: "writing language field",
 					Err:       err,
 				}
@@ -109,7 +109,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 		if options.Prompt != "" {
 			err = writer.WriteField("prompt", options.Prompt)
 			if err != nil {
-				return nil, "", &llmkit.RequestError{
+				return nil, "", &errors.RequestError{
 					Operation: "writing prompt field",
 					Err:       err,
 				}
@@ -119,7 +119,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 		if options.ResponseFormat != "" {
 			err = writer.WriteField("response_format", string(options.ResponseFormat))
 			if err != nil {
-				return nil, "", &llmkit.RequestError{
+				return nil, "", &errors.RequestError{
 					Operation: "writing response_format field",
 					Err:       err,
 				}
@@ -129,7 +129,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 		if options.Temperature != 0 {
 			err = writer.WriteField("temperature", strconv.FormatFloat(options.Temperature, 'f', -1, 64))
 			if err != nil {
-				return nil, "", &llmkit.RequestError{
+				return nil, "", &errors.RequestError{
 					Operation: "writing temperature field",
 					Err:       err,
 				}
@@ -140,7 +140,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 			for _, granularity := range options.TimestampGranularities {
 				err = writer.WriteField("timestamp_granularities[]", string(granularity))
 				if err != nil {
-					return nil, "", &llmkit.RequestError{
+					return nil, "", &errors.RequestError{
 						Operation: "writing timestamp_granularities field",
 						Err:       err,
 					}
@@ -151,7 +151,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 
 	err = writer.Close()
 	if err != nil {
-		return nil, "", &llmkit.RequestError{
+		return nil, "", &errors.RequestError{
 			Operation: "closing multipart writer",
 			Err:       err,
 		}
@@ -166,7 +166,7 @@ func callSTT(apiKey string, body *bytes.Buffer, contentType string) ([]byte, err
 
 	req, err := http.NewRequest("POST", EndpointTranscriptions, body)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "creating STT request",
 			Err:       err,
 		}
@@ -177,7 +177,7 @@ func callSTT(apiKey string, body *bytes.Buffer, contentType string) ([]byte, err
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "sending STT request",
 			Err:       err,
 		}
@@ -186,14 +186,14 @@ func callSTT(apiKey string, body *bytes.Buffer, contentType string) ([]byte, err
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "reading STT response",
 			Err:       err,
 		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, &llmkit.APIError{
+		return nil, &errors.APIError{
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyBytes),
@@ -208,7 +208,7 @@ func callSTT(apiKey string, body *bytes.Buffer, contentType string) ([]byte, err
 // Returns the transcribed text and error for simple usage
 func Speech2Text(audioData []byte, filename string, apiKey string, options *STTOptions) (string, error) {
 	if apiKey == "" {
-		return "", &llmkit.ValidationError{
+		return "", &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}
@@ -238,7 +238,7 @@ func Speech2Text(audioData []byte, filename string, apiKey string, options *STTO
 	var response STTResponse
 	err = json.Unmarshal(responseBytes, &response)
 	if err != nil {
-		return "", &llmkit.RequestError{
+		return "", &errors.RequestError{
 			Operation: "parsing STT response",
 			Err:       err,
 		}
@@ -251,7 +251,7 @@ func Speech2Text(audioData []byte, filename string, apiKey string, options *STTO
 // Use this when you need timestamps, segments, or other metadata
 func Speech2TextDetailed(audioData []byte, filename string, apiKey string, options *STTOptions) (*STTResponse, error) {
 	if apiKey == "" {
-		return nil, &llmkit.ValidationError{
+		return nil, &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}
@@ -281,7 +281,7 @@ func Speech2TextDetailed(audioData []byte, filename string, apiKey string, optio
 	var response STTResponse
 	err = json.Unmarshal(responseBytes, &response)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "parsing detailed STT response",
 			Err:       err,
 		}

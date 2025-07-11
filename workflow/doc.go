@@ -18,7 +18,7 @@
 //	func main() {
 //		task := &MyTask{}
 //		wf := workflow.New(task)
-//		
+//
 //		state := make(map[string]interface{})
 //		err := wf.Run(context.Background(), state)
 //		if err != nil {

@@ -42,36 +42,36 @@ func main() {
 	// Example 1: Basic transcription with defaults
 	fmt.Println("Example 1: Basic transcription (Whisper-1 model)")
 	fmt.Println("=" + strings.Repeat("=", 50))
-	
+
 	basicText, err := openai.Speech2Text(audioData, audioFilePath, apiKey, nil)
 	if err != nil {
 		log.Fatalf("Basic transcription failed: %v", err)
 	}
-	
+
 	fmt.Printf("Transcribed text: %s\n\n", basicText)
 
 	// Example 2: Advanced transcription with options
 	fmt.Println("Example 2: Advanced transcription with custom options")
 	fmt.Println("=" + strings.Repeat("=", 50))
-	
+
 	options := &openai.STTOptions{
 		Model:       openai.ModelWhisper1,
 		Language:    "en", // English
 		Prompt:      "This audio contains technical terminology and proper names.",
-		Temperature: 0.2,  // More focused/deterministic
+		Temperature: 0.2, // More focused/deterministic
 	}
-	
+
 	advancedText, err := openai.Speech2Text(audioData, audioFilePath, apiKey, options)
 	if err != nil {
 		log.Fatalf("Advanced transcription failed: %v", err)
 	}
-	
+
 	fmt.Printf("Transcribed text: %s\n\n", advancedText)
 
 	// Example 3: Detailed transcription with metadata
 	fmt.Println("Example 3: Detailed transcription with timestamps")
 	fmt.Println("=" + strings.Repeat("=", 50))
-	
+
 	detailedOptions := &openai.STTOptions{
 		Model:          openai.ModelWhisper1,
 		ResponseFormat: openai.STTFormatVerboseJSON,
@@ -79,12 +79,12 @@ func main() {
 			openai.GranularitySegment,
 		},
 	}
-	
+
 	detailedResponse, err := openai.Speech2TextDetailed(audioData, audioFilePath, apiKey, detailedOptions)
 	if err != nil {
 		log.Fatalf("Detailed transcription failed: %v", err)
 	}
-	
+
 	fmt.Printf("Full text: %s\n", detailedResponse.Text)
 	if detailedResponse.Language != "" {
 		fmt.Printf("Detected language: %s\n", detailedResponse.Language)
@@ -92,11 +92,11 @@ func main() {
 	if detailedResponse.Duration > 0 {
 		fmt.Printf("Duration: %.2f seconds\n", detailedResponse.Duration)
 	}
-	
+
 	if len(detailedResponse.Segments) > 0 {
 		fmt.Println("\nSegments with timestamps:")
 		for i, segment := range detailedResponse.Segments {
-			fmt.Printf("  [%d] %.2fs - %.2fs: %s\n", 
+			fmt.Printf("  [%d] %.2fs - %.2fs: %s\n",
 				i+1, segment.Start, segment.End, strings.TrimSpace(segment.Text))
 		}
 	}
@@ -104,12 +104,12 @@ func main() {
 	// Example 4: Different response formats
 	fmt.Println("\n" + "Example 4: Different response formats")
 	fmt.Println("=" + strings.Repeat("=", 50))
-	
+
 	// Plain text format
 	textOptions := &openai.STTOptions{
 		ResponseFormat: openai.STTFormatText,
 	}
-	
+
 	plainText, err := openai.Speech2Text(audioData, audioFilePath, apiKey, textOptions)
 	if err != nil {
 		log.Printf("Text format transcription failed: %v", err)
@@ -121,14 +121,14 @@ func main() {
 	srtOptions := &openai.STTOptions{
 		ResponseFormat: openai.STTFormatSRT,
 	}
-	
+
 	srtText, err := openai.Speech2Text(audioData, audioFilePath, apiKey, srtOptions)
 	if err != nil {
 		log.Printf("SRT format transcription failed: %v", err)
 	} else {
 		fmt.Println("\nSRT subtitle format:")
 		fmt.Println(srtText)
-		
+
 		// Save SRT to file
 		srtFilename := "transcription.srt"
 		err = os.WriteFile(srtFilename, []byte(srtText), 0644)

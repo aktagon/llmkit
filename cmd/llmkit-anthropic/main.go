@@ -26,7 +26,7 @@ func main() {
 		log.Fatal("ANTHROPIC_API_KEY environment variable is required")
 	}
 
-	response, err := anthropic.Chat(systemPrompt, userPrompt, jsonSchema, apiKey)
+	response, err := anthropic.Prompt(systemPrompt, userPrompt, jsonSchema, apiKey)
 	if err != nil {
 		log.Fatalf("Error calling Anthropic API: %v", err)
 	}

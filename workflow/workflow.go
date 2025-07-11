@@ -78,14 +78,14 @@ func getTaskName(task Task) string {
 	if task == nil {
 		return "<nil>"
 	}
-	
+
 	// Get the type of the task
 	t := reflect.TypeOf(task)
-	
+
 	// If it's a pointer, get the element type
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	
+
 	return t.Name()
 }

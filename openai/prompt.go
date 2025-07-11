@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/aktagon/llmkit"
+	"github.com/aktagon/llmkit/errors"
 )
 
 // validateSchema validates that the JSON schema has required top-level attributes
@@ -14,35 +14,35 @@ func validateSchema(schemaJSON string) (SchemaValidation, error) {
 	var schema SchemaValidation
 
 	if err := json.Unmarshal([]byte(schemaJSON), &schema); err != nil {
-		return schema, &llmkit.SchemaError{
+		return schema, &errors.SchemaError{
 			Field:   "json",
 			Message: "invalid JSON: " + err.Error(),
 		}
 	}
 
 	if schema.Name == "" {
-		return schema, &llmkit.SchemaError{
+		return schema, &errors.SchemaError{
 			Field:   "name",
 			Message: "required field missing",
 		}
 	}
 
 	if schema.Description == "" {
-		return schema, &llmkit.SchemaError{
+		return schema, &errors.SchemaError{
 			Field:   "description",
 			Message: "required field missing",
 		}
 	}
 
 	if !schema.Strict {
-		return schema, &llmkit.SchemaError{
+		return schema, &errors.SchemaError{
 			Field:   "strict",
 			Message: "must be true",
 		}
 	}
 
 	if schema.Schema == nil {
-		return schema, &llmkit.SchemaError{
+		return schema, &errors.SchemaError{
 			Field:   "schema",
 			Message: "required field missing",
 		}
@@ -71,7 +71,7 @@ func buildStructuredRequest(systemPrompt, userPrompt string, schema SchemaValida
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "marshaling structured request",
 			Err:       err,
 		}
@@ -92,7 +92,7 @@ func buildRequest(systemPrompt, userPrompt string) ([]byte, error) {
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "marshaling chat request",
 			Err:       err,
 		}
@@ -107,7 +107,7 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(requestBody))
 	if err != nil {
-		return "", &llmkit.RequestError{
+		return "", &errors.RequestError{
 			Operation: "creating request",
 			Err:       err,
 		}
@@ -118,7 +118,7 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", &llmkit.RequestError{
+		return "", &errors.RequestError{
 			Operation: "sending request",
 			Err:       err,
 		}
@@ -127,14 +127,14 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", &llmkit.RequestError{
+		return "", &errors.RequestError{
 			Operation: "reading response",
 			Err:       err,
 		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", &llmkit.APIError{
+		return "", &errors.APIError{
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
@@ -148,7 +148,7 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 // Prompt sends a prompt request to OpenAI API
 func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
 	if apiKey == "" {
-		return "", &llmkit.ValidationError{
+		return "", &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}

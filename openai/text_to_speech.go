@@ -7,20 +7,20 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/aktagon/llmkit"
+	"github.com/aktagon/llmkit/errors"
 )
 
 // validateTTSInput validates the input text and options
 func validateTTSInput(input string, options *TTSOptions) error {
 	if strings.TrimSpace(input) == "" {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "input",
 			Message: "text input is required",
 		}
 	}
 
 	if len(input) > 4096 {
-		return &llmkit.ValidationError{
+		return &errors.ValidationError{
 			Field:   "input",
 			Message: "input text exceeds 4096 character limit",
 		}
@@ -28,7 +28,7 @@ func validateTTSInput(input string, options *TTSOptions) error {
 
 	if options != nil {
 		if options.Speed != 0 && (options.Speed < 0.25 || options.Speed > 4.0) {
-			return &llmkit.ValidationError{
+			return &errors.ValidationError{
 				Field:   "speed",
 				Message: "speed must be between 0.25 and 4.0",
 			}
@@ -64,7 +64,7 @@ func buildTTSRequest(input string, options *TTSOptions) ([]byte, error) {
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "marshaling TTS request",
 			Err:       err,
 		}
@@ -79,7 +79,7 @@ func callTTS(apiKey string, requestBody []byte) ([]byte, error) {
 
 	req, err := http.NewRequest("POST", EndpointSpeech, bytes.NewReader(requestBody))
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "creating TTS request",
 			Err:       err,
 		}
@@ -90,7 +90,7 @@ func callTTS(apiKey string, requestBody []byte) ([]byte, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "sending TTS request",
 			Err:       err,
 		}
@@ -99,14 +99,14 @@ func callTTS(apiKey string, requestBody []byte) ([]byte, error) {
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, &llmkit.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "reading TTS response",
 			Err:       err,
 		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, &llmkit.APIError{
+		return nil, &errors.APIError{
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyBytes),
@@ -121,7 +121,7 @@ func callTTS(apiKey string, requestBody []byte) ([]byte, error) {
 // Returns the binary audio data and error
 func Text2Speech(input string, apiKey string, options *TTSOptions) ([]byte, error) {
 	if apiKey == "" {
-		return nil, &llmkit.ValidationError{
+		return nil, &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}

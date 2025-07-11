@@ -209,10 +209,10 @@ type STTOptions struct {
 
 // STTResponse represents the transcription response
 type STTResponse struct {
-	Text     string      `json:"text"`
-	Language string      `json:"language,omitempty"`
-	Duration float64     `json:"duration,omitempty"`
-	Words    []STTWord   `json:"words,omitempty"`
+	Text     string       `json:"text"`
+	Language string       `json:"language,omitempty"`
+	Duration float64      `json:"duration,omitempty"`
+	Words    []STTWord    `json:"words,omitempty"`
 	Segments []STTSegment `json:"segments,omitempty"`
 }
 

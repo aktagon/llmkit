@@ -1,4 +1,4 @@
-package llmkit
+package errors
 
 import "fmt"
 
