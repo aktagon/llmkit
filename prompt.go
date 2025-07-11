@@ -5,6 +5,7 @@ import (
 
 	anthropic "github.com/aktagon/llmkit/anthropic"
 	"github.com/aktagon/llmkit/errors"
+	google "github.com/aktagon/llmkit/google"
 	openai "github.com/aktagon/llmkit/openai"
 )
 
@@ -14,6 +15,7 @@ type Provider string
 const (
 	ProviderOpenAI    Provider = "openai"
 	ProviderAnthropic Provider = "anthropic"
+	ProviderGoogle    Provider = "google"
 )
 
 // PromptOptions configures the prompt request
@@ -39,6 +41,8 @@ func Prompt(opts PromptOptions) (string, error) {
 		return openai.Prompt(opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey)
 	case ProviderAnthropic:
 		return anthropic.Prompt(opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey)
+	case ProviderGoogle:
+		return google.Prompt(opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey)
 	default:
 		return "", &errors.ValidationError{
 			Field:   "provider",
@@ -62,6 +66,17 @@ func PromptOpenAI(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, 
 func PromptAnthropic(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
 	return Prompt(PromptOptions{
 		Provider:     ProviderAnthropic,
+		SystemPrompt: systemPrompt,
+		UserPrompt:   userPrompt,
+		JSONSchema:   jsonSchema,
+		APIKey:       apiKey,
+	})
+}
+
+// PromptGoogle is a convenience function for Google prompts
+func PromptGoogle(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
+	return Prompt(PromptOptions{
+		Provider:     ProviderGoogle,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		JSONSchema:   jsonSchema,

@@ -7,17 +7,22 @@ external dependencies required.
 
 - **Anthropic Claude** - Chat completions and structured output
 - **OpenAI GPT** - Chat completions and structured output
+- **Google Gemini** - Chat completions and structured output
 
 ## Structure
 
 ```
 ├── cmd/                    # Command-line interfaces
 │   ├── llmkit-anthropic/   # Anthropic CLI
-│   └── llmkit-openai/      # OpenAI CLI
+│   ├── llmkit-openai/      # OpenAI CLI
+│   └── llmkit-google/      # Google CLI
 ├── anthropic/              # Anthropic (Claude) API package
 │   ├── prompt.go           # API implementation
 │   └── README.md           # Usage examples
 ├── openai/                 # OpenAI API package
+│   ├── prompt.go           # API implementation
+│   └── README.md           # Usage examples
+├── google/                 # Google (Gemini) API package
 │   ├── prompt.go           # API implementation
 │   └── README.md           # Usage examples
 ├── docs/                   # API documentation
@@ -37,6 +42,9 @@ go install github.com/aktagon/llmkit/cmd/llmkit-anthropic@latest
 
 # Install OpenAI CLI
 go install github.com/aktagon/llmkit/cmd/llmkit-openai@latest
+
+# Install Google CLI
+go install github.com/aktagon/llmkit/cmd/llmkit-google@latest
 ```
 
 Make sure your `$GOPATH/bin` is in your `$PATH` to use the installed binaries:
@@ -115,6 +123,31 @@ llmkit-openai \
   "$(cat examples/openai/schemas/weather-schema.json)"
 ```
 
+### Google
+
+**Using installed CLI:**
+
+```bash
+export GOOGLE_API_KEY="your-key"
+llmkit-google "You are helpful" "Hello Gemini"
+```
+
+**Using go run:**
+
+```bash
+export GOOGLE_API_KEY="your-key"
+go run cmd/llmkit-google/main.go "You are helpful" "Hello Gemini"
+```
+
+**Structured output:**
+
+```bash
+llmkit-google \
+  "You are an expert at structured data extraction." \
+  "What's the weather like in San Francisco? I prefer Celsius." \
+  "$(cat examples/google/schemas/weather-schema.json)"
+```
+
 ## Programmatic Usage
 
 ### As a Library
@@ -129,6 +162,7 @@ import (
 
     "github.com/aktagon/llmkit/anthropic"
     "github.com/aktagon/llmkit/openai"
+    "github.com/aktagon/llmkit/google"
 )
 
 func main() {
@@ -157,6 +191,19 @@ func main() {
         log.Fatal(err)
     }
     fmt.Println("OpenAI:", response)
+
+    // Google example
+    googleKey := os.Getenv("GOOGLE_API_KEY")
+    response, err = google.Prompt(
+        "You are a helpful assistant",
+        "What is the capital of France?",
+        "", // no schema for simple prompt
+        googleKey,
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("Google:", response)
 }
 ```
 

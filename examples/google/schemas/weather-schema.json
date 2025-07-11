@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "description": "Get the current weather in a given location",
+  "properties": {
+    "location": {
+      "type": "string",
+      "description": "The city and state, e.g. San Francisco, CA"
+    },
+    "temperature": {
+      "type": "number",
+      "description": "The temperature"
+    },
+    "unit": {
+      "type": "string",
+      "enum": ["celsius", "fahrenheit"],
+      "description": "The temperature unit to use"
+    }
+  },
+  "required": ["location", "temperature", "unit"]
+}
+
