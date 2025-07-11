@@ -273,11 +273,11 @@ The library provides structured error types:
 response, err := openai.Prompt(systemPrompt, userPrompt, schema, apiKey)
 if err != nil {
     switch e := err.(type) {
-    case *llmkit.APIError:
+    case *errors.APIError:
         fmt.Printf("API error: %s (status %d)\n", e.Message, e.StatusCode)
-    case *llmkit.SchemaError:
+    case *errors.SchemaError:
         fmt.Printf("Schema validation error: %s\n", e.Message)
-    case *llmkit.ValidationError:
+    case *errors.ValidationError:
         fmt.Printf("Input validation error: %s\n", e.Message)
     default:
         fmt.Printf("Unknown error: %v\n", err)
