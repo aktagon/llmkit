@@ -18,16 +18,28 @@ func buildPrompt(systemPrompt, userPrompt string) string {
 	return fmt.Sprintf("%s\n\n%s", systemPrompt, userPrompt)
 }
 
-// buildRequest creates the JSON request body for Google's API
-func buildRequest(systemPrompt, userPrompt, jsonSchema string) ([]byte, error) {
+// buildRequest creates the JSON request body for Google's API with optional files
+func buildRequest(systemPrompt, userPrompt, jsonSchema string, files ...File) ([]byte, error) {
 	combinedPrompt := buildPrompt(systemPrompt, userPrompt)
 	
+	parts := []Part{
+		{Text: combinedPrompt},
+	}
+
+	// Add file parts if provided
+	for _, file := range files {
+		parts = append(parts, Part{
+			FileData: &FileData{
+				MimeType: file.MimeType,
+				FileURI:  file.URI,
+			},
+		})
+	}
+
 	request := GoogleRequest{
 		Contents: []Content{
 			{
-				Parts: []Part{
-					{Text: combinedPrompt},
-				},
+				Parts: parts,
 			},
 		},
 	}
@@ -104,7 +116,7 @@ func call(apiKey string, requestBody []byte) (string, error) {
 }
 
 // Prompt sends a prompt request to Google's Generative AI API
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -112,7 +124,7 @@ func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error)
 		}
 	}
 
-	requestBody, err := buildRequest(systemPrompt, userPrompt, jsonSchema)
+	requestBody, err := buildRequest(systemPrompt, userPrompt, jsonSchema, files...)
 	if err != nil {
 		return "", fmt.Errorf("building request body: %w", err)
 	}

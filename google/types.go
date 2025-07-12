@@ -5,6 +5,9 @@ const (
 	// Endpoint is the Google Generative AI API endpoint
 	Endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
+	// FilesEndpoint is the Google Files API endpoint for uploads
+	FilesEndpoint = "https://generativelanguage.googleapis.com/upload/v1beta/files"
+
 	// Model is the default Gemini model to use
 	Model = "gemini-2.5-flash"
 )
@@ -14,9 +17,10 @@ type Content struct {
 	Parts []Part `json:"parts"`
 }
 
-// Part represents a text part of the content
+// Part represents a text or file part of the content
 type Part struct {
-	Text string `json:"text"`
+	Text     string    `json:"text,omitempty"`
+	FileData *FileData `json:"file_data,omitempty"`
 }
 
 // GenerationConfig configures the generation parameters
@@ -68,4 +72,35 @@ type JsonSchema struct {
 	Items       interface{}            `json:"items,omitempty"`
 	Required    []string               `json:"required,omitempty"`
 	Description string                 `json:"description,omitempty"`
+}
+
+// File represents an uploaded file
+type File struct {
+	URI         string `json:"uri"`
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	MimeType    string `json:"mime_type"`
+	SizeBytes   int64  `json:"size_bytes"`
+	State       string `json:"state"`
+}
+
+// FileData represents a file reference in content
+type FileData struct {
+	MimeType string `json:"mime_type"`
+	FileURI  string `json:"file_uri"`
+}
+
+// FileUploadRequest represents the initial upload request
+type FileUploadRequest struct {
+	File FileUploadInfo `json:"file"`
+}
+
+// FileUploadInfo represents file metadata for upload
+type FileUploadInfo struct {
+	DisplayName string `json:"display_name"`
+}
+
+// FileUploadResponse wraps the uploaded file
+type FileUploadResponse struct {
+	File File `json:"file"`
 }
