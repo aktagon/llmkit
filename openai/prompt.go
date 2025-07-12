@@ -51,13 +51,29 @@ func validateSchema(schemaJSON string) (SchemaValidation, error) {
 	return schema, nil
 }
 
-// buildStructuredRequest creates a structured output request
-func buildStructuredRequest(systemPrompt, userPrompt string, schema SchemaValidation) ([]byte, error) {
+// buildMessageContent creates message content with optional files
+func buildMessageContent(text string, files ...FileUploadResponse) interface{} {
+	if len(files) == 0 {
+		return text
+	}
+
+	parts := []ContentPart{{Type: "text", Text: text}}
+	for _, file := range files {
+		parts = append(parts, ContentPart{
+			Type: "file",
+			File: &FileReference{FileID: file.ID},
+		})
+	}
+	return parts
+}
+
+// buildStructuredRequest creates a structured output request with optional file attachments
+func buildStructuredRequest(systemPrompt, userPrompt string, schema SchemaValidation, files ...FileUploadResponse) ([]byte, error) {
 	request := StructuredRequest{
 		Model: Model,
 		Input: []Message{
 			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
+			{Role: "user", Content: buildMessageContent(userPrompt, files...)},
 		},
 		Text: TextFormat{
 			Format: JsonSchema{
@@ -80,13 +96,13 @@ func buildStructuredRequest(systemPrompt, userPrompt string, schema SchemaValida
 	return data, nil
 }
 
-// buildRequest creates a standard chat completion request
-func buildRequest(systemPrompt, userPrompt string) ([]byte, error) {
+// buildRequest creates a standard chat completion request with optional file attachments
+func buildRequest(systemPrompt, userPrompt string, files ...FileUploadResponse) ([]byte, error) {
 	request := ChatRequest{
 		Model: Model,
 		Messages: []Message{
 			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
+			{Role: "user", Content: buildMessageContent(userPrompt, files...)},
 		},
 	}
 
@@ -145,8 +161,8 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 	return string(bodyText), nil
 }
 
-// Prompt sends a prompt request to OpenAI API
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
+// Prompt sends a prompt request to OpenAI API with optional file attachments
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...FileUploadResponse) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -164,11 +180,11 @@ func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error)
 		if err != nil {
 			return "", err
 		}
-		requestBody, err = buildStructuredRequest(systemPrompt, userPrompt, schema)
+		requestBody, err = buildStructuredRequest(systemPrompt, userPrompt, schema, files...)
 		endpoint = EndpointResponses
 	} else {
 		// Use standard chat completion
-		requestBody, err = buildRequest(systemPrompt, userPrompt)
+		requestBody, err = buildRequest(systemPrompt, userPrompt, files...)
 		endpoint = EndpointCompletions
 	}
 

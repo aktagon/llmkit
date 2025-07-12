@@ -17,6 +17,9 @@ const (
 	// EndpointTranscriptions is the OpenAI API endpoint for speech-to-text
 	EndpointTranscriptions = "https://api.openai.com/v1/audio/transcriptions"
 
+	// EndpointFiles is the OpenAI API endpoint for file uploads
+	EndpointFiles = "https://api.openai.com/v1/files"
+
 	// ModelTTS1 is optimized for real-time use cases
 	ModelTTS1 = "tts-1"
 
@@ -47,9 +50,21 @@ type Tool struct {
 // Message represents a conversation message in OpenAI format
 type Message struct {
 	Role         string        `json:"role"`
-	Content      string        `json:"content,omitempty"`
+	Content      interface{}   `json:"content,omitempty"`
 	Name         string        `json:"name,omitempty"`
 	FunctionCall *FunctionCall `json:"function_call,omitempty"`
+}
+
+// FileReference represents a file reference in message content
+type FileReference struct {
+	FileID string `json:"file_id"`
+}
+
+// ContentPart represents a part of message content (text or file)
+type ContentPart struct {
+	Type string         `json:"type"`
+	Text string         `json:"text,omitempty"`
+	File *FileReference `json:"file,omitempty"`
 }
 
 // FunctionCall represents a function call request from GPT
@@ -240,4 +255,14 @@ type STTSegment struct {
 	AvgLogprob       float64 `json:"avg_logprob"`
 	CompressionRatio float64 `json:"compression_ratio"`
 	NoSpeechProb     float64 `json:"no_speech_prob"`
+}
+
+// FileUploadResponse represents the response from file upload
+type FileUploadResponse struct {
+	ID       string `json:"id"`
+	Object   string `json:"object"`
+	Bytes    int64  `json:"bytes"`
+	Created  int64  `json:"created_at"`
+	Filename string `json:"filename"`
+	Purpose  string `json:"purpose"`
 }
