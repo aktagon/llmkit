@@ -5,11 +5,17 @@ const (
 	// Endpoint is the Anthropic API endpoint for chat completions
 	Endpoint = "https://api.anthropic.com/v1/messages"
 
+	// FilesEndpoint is the Anthropic API endpoint for file uploads
+	FilesEndpoint = "https://api.anthropic.com/v1/files"
+
 	// Model is the default Claude model to use
 	Model = "claude-sonnet-4-20250514"
 
 	// AnthropicVersion is the API version header value
 	AnthropicVersion = "2023-06-01"
+
+	// FilesBetaHeader is the beta header value for files API
+	FilesBetaHeader = "files-api-2025-04-14"
 
 	// MaxTokens is the default maximum tokens for responses
 	MaxTokens = 4096
@@ -41,10 +47,11 @@ type ToolCall struct {
 	Input map[string]interface{} `json:"input"`
 }
 
-// Content represents message content (text or tool use/result)
+// Content represents message content (text, tool use/result, or file)
 type Content struct {
 	Type      string                 `json:"type"`
 	Text      string                 `json:"text,omitempty"`
+	Source    *FileSource           `json:"source,omitempty"`
 	ID        string                 `json:"id,omitempty"`
 	Name      string                 `json:"name,omitempty"`
 	Input     map[string]interface{} `json:"input,omitempty"`
@@ -65,6 +72,17 @@ type Usage struct {
 	CacheReadInputTokens     int    `json:"cache_read_input_tokens"`
 	OutputTokens             int    `json:"output_tokens"`
 	ServiceTier              string `json:"service_tier"`
+}
+
+// File represents an uploaded file
+type File struct {
+	ID string `json:"id"`
+}
+
+// FileSource represents a file reference in content
+type FileSource struct {
+	Type   string `json:"type"`
+	FileID string `json:"file_id"`
 }
 
 // AnthropicResponse represents the API response structure

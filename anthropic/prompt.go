@@ -65,9 +65,24 @@ func buildPrompt(userPrompt, jsonSchema string) (string, error) {
 }
 
 // buildRequest creates the JSON request body for the Anthropic API
-func buildRequest(systemPrompt, userPrompt string) (string, error) {
-	messages := []map[string]string{
-		{"role": "user", "content": userPrompt},
+func buildRequest(systemPrompt, userPrompt string, files []File) (string, error) {
+	var content interface{}
+
+	if len(files) == 0 {
+		content = userPrompt
+	} else {
+		blocks := []Content{{Type: "text", Text: userPrompt}}
+		for _, file := range files {
+			blocks = append(blocks, Content{
+				Type:   "document",
+				Source: &FileSource{Type: "file", FileID: file.ID},
+			})
+		}
+		content = blocks
+	}
+
+	messages := []map[string]interface{}{
+		{"role": "user", "content": content},
 	}
 
 	requestBody := map[string]interface{}{
@@ -105,6 +120,7 @@ func call(endpoint, apiKey string, requestBody string) (string, error) {
 
 	req.Header.Set("x-api-key", apiKey)
 	req.Header.Set("anthropic-version", AnthropicVersion)
+	req.Header.Set("anthropic-beta", FilesBetaHeader)
 	req.Header.Set("content-type", "application/json")
 
 	resp, err := client.Do(req)
@@ -136,8 +152,8 @@ func call(endpoint, apiKey string, requestBody string) (string, error) {
 	return string(bodyText), nil
 }
 
-// Prompt sends a prompt request to Anthropic API
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
+// Prompt sends a prompt request to Anthropic API with optional file attachments
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -152,7 +168,7 @@ func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error)
 	}
 
 	// Build the request body
-	requestBody, err := buildRequest(systemPrompt, finalUserPrompt)
+	requestBody, err := buildRequest(systemPrompt, finalUserPrompt, files)
 	if err != nil {
 		return "", fmt.Errorf("building request body: %w", err)
 	}
