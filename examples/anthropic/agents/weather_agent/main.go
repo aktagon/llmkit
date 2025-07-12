@@ -118,14 +118,14 @@ func main() {
 	}
 
 	// Create chat agent
-	agent := agents.New(apiKey)
-	if agent == nil {
-		log.Fatal("Failed to create chat agent")
+	agent, err := agents.New(apiKey)
+	if err != nil {
+		log.Fatalf("Failed to create chat agent: %v", err)
 	}
 
 	// Register weather tool
 	weatherTool := createWeatherTool()
-	err := agent.RegisterTool(weatherTool)
+	err = agent.RegisterTool(weatherTool)
 	if err != nil {
 		log.Fatalf("Failed to register weather tool: %v", err)
 	}
@@ -133,7 +133,7 @@ func main() {
 	fmt.Println("=== Weather Chat Agent Demo ===")
 	fmt.Println("Ask me about the weather in different cities!")
 	fmt.Println("Try: 'What's the weather in San Francisco?'")
-	fmt.Println("Type 'exit' to quit.\n")
+	fmt.Println("Type 'exit' to quit.")
 
 	// Create scanner for reading full lines
 	scanner := bufio.NewScanner(os.Stdin)
@@ -162,6 +162,6 @@ func main() {
 			continue
 		}
 
-		fmt.Printf("Agent: %s\n\n", response)
+		fmt.Printf("Agent: %s\n\n", response.Text)
 	}
 }

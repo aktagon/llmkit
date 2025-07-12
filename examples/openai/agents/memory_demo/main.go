@@ -14,7 +14,7 @@ func main() {
 		log.Fatal("Please set OPENAI_API_KEY environment variable")
 	}
 
-	fmt.Println("=== OpenAI Memory Features Demo ===\n")
+	fmt.Println("=== OpenAI Memory Features Demo ===")
 
 	// Example 1: Memory as Context
 	fmt.Println("1. Memory as Context:")

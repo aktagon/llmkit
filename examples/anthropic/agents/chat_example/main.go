@@ -20,7 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Chat Agent Example ===\n")
+	fmt.Println("=== Chat Agent Example ===")
 
 	// Example 1: Simple chat
 	fmt.Println("1. Simple chat:")

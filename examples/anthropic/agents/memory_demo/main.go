@@ -14,7 +14,7 @@ func main() {
 		log.Fatal("Please set ANTHROPIC_API_KEY environment variable")
 	}
 
-	fmt.Println("=== Memory Features Demo ===\n")
+	fmt.Println("=== Memory Features Demo ===")
 
 	// Example 1: Memory as Context
 	fmt.Println("1. Memory as Context:")

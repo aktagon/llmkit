@@ -139,7 +139,7 @@ func main() {
 		}
 	}
 
-	fmt.Println("\n🎉 All examples completed successfully!")
+	fmt.Println("\nAll examples completed successfully!")
 	fmt.Println("\nAPI Features demonstrated:")
 	fmt.Println("  ✓ Basic transcription with defaults")
 	fmt.Println("  ✓ Custom options (language, prompt, temperature)")

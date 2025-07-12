@@ -20,7 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== OpenAI Chat Agent Example ===\n")
+	fmt.Println("=== OpenAI Chat Agent Example ===")
 
 	// Example 1: Simple chat
 	fmt.Println("1. Simple chat:")
@@ -29,8 +29,6 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("GPT: %s\n", response.Text)
-	fmt.Printf("Tokens used: %d input, %d output\n\n",
-		response.Raw.Usage.PromptTokens, response.Raw.Usage.CompletionTokens)
 
 	// Example 2: Chat with system prompt
 	fmt.Println("2. Chat with system prompt:")

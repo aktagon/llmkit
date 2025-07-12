@@ -20,7 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== OpenAI Temperature and MaxTokens Test ===\n")
+	fmt.Println("=== OpenAI Temperature and MaxTokens Test ===")
 
 	// Test 1: High temperature for creativity
 	fmt.Println("1. Creative response (high temperature):")

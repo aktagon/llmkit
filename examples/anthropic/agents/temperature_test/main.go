@@ -20,7 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Temperature and MaxTokens Test (Simplified) ===\n")
+	fmt.Println("=== Temperature and MaxTokens Test (Simplified) ===")
 
 	// Test 1: High temperature for creativity
 	fmt.Println("1. Creative response (high temperature):")
