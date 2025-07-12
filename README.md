@@ -32,6 +32,16 @@ external dependencies required.
 
 ## Installation
 
+### Homebrew (Recommended)
+
+Install using Homebrew:
+
+```bash
+brew install aktagon/llmkit/llmkit
+```
+
+This installs the `llmkit` binary and all provider-specific CLI tools (`llmkit-anthropic`, `llmkit-openai`, `llmkit-google`).
+
 ### Install CLI Tools
 
 Install the command-line tools globally:
@@ -107,13 +117,6 @@ export OPENAI_API_KEY="your-key"
 llmkit-openai "You are helpful" "Hello GPT"
 ```
 
-**Using go run:**
-
-```bash
-export OPENAI_API_KEY="your-key"
-go run cmd/llmkit-openai/main.go "You are helpful" "Hello GPT"
-```
-
 **Structured output:**
 
 ```bash
@@ -130,13 +133,6 @@ llmkit-openai \
 ```bash
 export GOOGLE_API_KEY="your-key"
 llmkit-google "You are helpful" "Hello Gemini"
-```
-
-**Using go run:**
-
-```bash
-export GOOGLE_API_KEY="your-key"
-go run cmd/llmkit-google/main.go "You are helpful" "Hello Gemini"
 ```
 
 **Structured output:**
@@ -287,3 +283,11 @@ if err != nil {
 ```
 
 Each provider directory contains detailed examples and usage instructions.
+
+## Support
+
+Commercial support is available. Contact christian@aktagon.com.
+
+## License
+
+MIT
