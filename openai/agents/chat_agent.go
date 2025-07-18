@@ -304,21 +304,31 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 	// Add conversation messages
 	messages = append(messages, ca.messages...)
 
-	// Handle schema by modifying the last user message if schema is provided
-	if options != nil && options.Schema != "" {
-		// Find the last user message and append schema instructions
-		for i := len(messages) - 1; i >= 0; i-- {
-			if messages[i].Role == "user" {
-				schemaInstructions := fmt.Sprintf("\n\nYou must output only the raw JSON without further explanation or formatting. Use the following JSON schema for the output format:\n\n%s", options.Schema)
-				messages[i].Content += schemaInstructions
-				break
-			}
-		}
-	}
-
 	requestBody := map[string]interface{}{
 		"model":    ca.model,
 		"messages": messages,
+	}
+
+	// Handle schema using structured output in chat completions
+	if options != nil && options.Schema != "" {
+		// Parse schema validation
+		var schema openai.SchemaValidation
+		if err := json.Unmarshal([]byte(options.Schema), &schema); err != nil {
+			return nil, &errors.RequestError{
+				Operation: "parsing schema",
+				Err:       err,
+			}
+		}
+
+		// Add response format for structured output
+		requestBody["response_format"] = map[string]interface{}{
+			"type": "json_schema",
+			"json_schema": map[string]interface{}{
+				"name":   schema.Name,
+				"schema": schema.Schema,
+				"strict": schema.Strict,
+			},
+		}
 	}
 
 	// Override max_tokens if provided in options
