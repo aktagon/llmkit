@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aktagon/llmkit/openai"
 	"github.com/aktagon/llmkit/openai/agents"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 // mockWeatherAPI simulates a weather API call
@@ -69,8 +69,8 @@ func mockWeatherAPI(location string, unit string) (string, error) {
 }
 
 // createWeatherTool creates a weather tool for the chat agent
-func createWeatherTool() openai.Tool {
-	return openai.Tool{
+func createWeatherTool() types.Tool {
+	return types.Tool{
 		Name:        "get_weather",
 		Description: "Get current temperature for a given location.",
 		Parameters: map[string]interface{}{

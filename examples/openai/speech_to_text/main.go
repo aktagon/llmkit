@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aktagon/llmkit/openai"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 func main() {
@@ -54,8 +55,8 @@ func main() {
 	fmt.Println("Example 2: Advanced transcription with custom options")
 	fmt.Println("=" + strings.Repeat("=", 50))
 
-	options := &openai.STTOptions{
-		Model:       openai.ModelWhisper1,
+	options := &types.STTOptions{
+		Model:       types.ModelWhisper1,
 		Language:    "en", // English
 		Prompt:      "This audio contains technical terminology and proper names.",
 		Temperature: 0.2, // More focused/deterministic
@@ -72,11 +73,11 @@ func main() {
 	fmt.Println("Example 3: Detailed transcription with timestamps")
 	fmt.Println("=" + strings.Repeat("=", 50))
 
-	detailedOptions := &openai.STTOptions{
-		Model:          openai.ModelWhisper1,
-		ResponseFormat: openai.STTFormatVerboseJSON,
-		TimestampGranularities: []openai.TimestampGranularity{
-			openai.GranularitySegment,
+	detailedOptions := &types.STTOptions{
+		Model:          types.ModelWhisper1,
+		ResponseFormat: types.STTFormatVerboseJSON,
+		TimestampGranularities: []types.TimestampGranularity{
+			types.GranularitySegment,
 		},
 	}
 
@@ -106,8 +107,8 @@ func main() {
 	fmt.Println("=" + strings.Repeat("=", 50))
 
 	// Plain text format
-	textOptions := &openai.STTOptions{
-		ResponseFormat: openai.STTFormatText,
+	textOptions := &types.STTOptions{
+		ResponseFormat: types.STTFormatText,
 	}
 
 	plainText, err := openai.Speech2Text(audioData, audioFilePath, apiKey, textOptions)
@@ -118,8 +119,8 @@ func main() {
 	}
 
 	// SRT subtitle format
-	srtOptions := &openai.STTOptions{
-		ResponseFormat: openai.STTFormatSRT,
+	srtOptions := &types.STTOptions{
+		ResponseFormat: types.STTFormatSRT,
 	}
 
 	srtText, err := openai.Speech2Text(audioData, audioFilePath, apiKey, srtOptions)

@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aktagon/llmkit/anthropic"
 	"github.com/aktagon/llmkit/anthropic/agents"
+	"github.com/aktagon/llmkit/anthropic/types"
 )
 
 // mockWeatherAPI simulates a weather API call
@@ -65,8 +65,8 @@ func mockWeatherAPI(location string, unit string) (string, error) {
 }
 
 // createWeatherTool creates a weather tool for the chat agent
-func createWeatherTool() anthropic.Tool {
-	return anthropic.Tool{
+func createWeatherTool() types.Tool {
+	return types.Tool{
 		Name:        "get_weather",
 		Description: "Get the current weather in a given location",
 		InputSchema: map[string]interface{}{

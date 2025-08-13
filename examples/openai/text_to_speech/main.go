@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/aktagon/llmkit/openai"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 func main() {
@@ -36,10 +37,10 @@ func main() {
 	fmt.Println("Example 2: Advanced text-to-speech with custom options")
 	advancedText := "This is an advanced example using a high-definition model with a different voice and format."
 
-	options := &openai.TTSOptions{
-		Model:          openai.ModelTTS1HD,
-		Voice:          openai.VoiceNova,
-		ResponseFormat: openai.FormatWAV,
+	options := &types.TTSOptions{
+		Model:          types.ModelTTS1HD,
+		Voice:          types.VoiceNova,
+		ResponseFormat: types.FormatWAV,
 		Speed:          1.2,
 	}
 
@@ -59,20 +60,20 @@ func main() {
 	// Example 3: Different voices demonstration
 	fmt.Println("Example 3: Demonstrating different voices")
 	voices := []struct {
-		voice openai.Voice
+		voice types.Voice
 		name  string
 	}{
-		{openai.VoiceAlloy, "alloy"},
-		{openai.VoiceEcho, "echo"},
-		{openai.VoiceFable, "fable"},
-		{openai.VoiceOnyx, "onyx"},
-		{openai.VoiceShimmer, "shimmer"},
+		{types.VoiceAlloy, "alloy"},
+		{types.VoiceEcho, "echo"},
+		{types.VoiceFable, "fable"},
+		{types.VoiceOnyx, "onyx"},
+		{types.VoiceShimmer, "shimmer"},
 	}
 
 	text := "This is a demonstration of different OpenAI TTS voices."
 
 	for _, v := range voices {
-		options := &openai.TTSOptions{
+		options := &types.TTSOptions{
 			Voice: v.voice,
 		}
 
