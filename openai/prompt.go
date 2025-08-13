@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/httpclient"
 )
 
 // validateSchema validates that the JSON schema has required top-level attributes
@@ -119,7 +120,7 @@ func buildRequest(systemPrompt, userPrompt string, files ...FileUploadResponse) 
 
 // call sends the HTTP request to OpenAI API
 func call(endpoint, apiKey string, requestBody []byte) (string, error) {
-	client := &http.Client{}
+	client := httpclient.NewClient()
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(requestBody))
 	if err != nil {

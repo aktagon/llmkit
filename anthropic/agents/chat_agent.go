@@ -10,6 +10,7 @@ import (
 
 	"github.com/aktagon/llmkit/anthropic"
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/httpclient"
 )
 
 // MemoryMode controls memory behavior using bitwise flags
@@ -61,7 +62,7 @@ func New(apiKey string, opts ...AgentOption) (*ChatAgent, error) {
 	}
 
 	agent := &ChatAgent{
-		client:     &http.Client{},
+		client:     httpclient.NewClient(),
 		apiKey:     apiKey,
 		model:      anthropic.Model,
 		messages:   make([]anthropic.Message, 0),

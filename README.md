@@ -255,6 +255,7 @@ func main() {
 - Command-line interface
 - Structured error types for better error handling
 - Programmatic API for library usage
+- **HTTP request/response logging** for debugging and monitoring
 
 ## Error Handling
 
@@ -280,6 +281,28 @@ if err != nil {
     }
     return
 }
+```
+
+## HTTP Logging
+
+Enable request/response logging for debugging:
+
+**Environment variables:**
+```bash
+export LLMKIT_LOG_HTTP=true
+export LLMKIT_LOG_LEVEL=info    # or debug for request/response bodies
+```
+
+**Configuration file (`llmkit.yaml`):**
+```yaml
+logging:
+  http: true
+  level: info
+```
+
+**Example output:**
+```
+2025/08/13 17:05:53 INFO HTTP request provider=anthropic method=POST url=https://api.anthropic.com/v1/messages duration=10.233s status=200
 ```
 
 Each provider directory contains detailed examples and usage instructions.

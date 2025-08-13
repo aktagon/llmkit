@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/httpclient"
 )
 
 // validateSchema checks if the provided JSON schema has required top-level attributes
@@ -108,7 +109,7 @@ func buildRequest(systemPrompt, userPrompt string, files []File) (string, error)
 
 // call makes the HTTP request to the Anthropic API
 func call(endpoint, apiKey string, requestBody string) (string, error) {
-	client := &http.Client{}
+	client := httpclient.NewClient()
 
 	req, err := http.NewRequest("POST", endpoint, strings.NewReader(requestBody))
 	if err != nil {

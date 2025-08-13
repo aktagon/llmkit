@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/httpclient"
 )
 
 // buildPrompt constructs the combined prompt from system and user prompts
@@ -73,7 +74,7 @@ func buildRequest(systemPrompt, userPrompt, jsonSchema string, files ...File) ([
 
 // call makes the HTTP request to Google's API
 func call(apiKey string, requestBody []byte) (string, error) {
-	client := &http.Client{}
+	client := httpclient.NewClient()
 	
 	url := fmt.Sprintf("%s?key=%s", Endpoint, apiKey)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(requestBody))

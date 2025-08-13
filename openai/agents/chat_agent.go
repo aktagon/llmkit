@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/httpclient"
 	"github.com/aktagon/llmkit/openai"
 )
 
@@ -61,7 +62,7 @@ func New(apiKey string, opts ...AgentOption) (*ChatAgent, error) {
 	}
 
 	agent := &ChatAgent{
-		client:     &http.Client{},
+		client:     httpclient.NewClient(),
 		apiKey:     apiKey,
 		model:      openai.Model,
 		messages:   make([]openai.Message, 0),
