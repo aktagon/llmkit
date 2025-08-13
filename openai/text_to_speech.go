@@ -8,10 +8,11 @@ import (
 	"strings"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 // validateTTSInput validates the input text and options
-func validateTTSInput(input string, options *TTSOptions) error {
+func validateTTSInput(input string, options *types.TTSOptions) error {
 	if strings.TrimSpace(input) == "" {
 		return &errors.ValidationError{
 			Field:   "input",
@@ -39,11 +40,11 @@ func validateTTSInput(input string, options *TTSOptions) error {
 }
 
 // buildTTSRequest creates a text-to-speech request with defaults
-func buildTTSRequest(input string, options *TTSOptions) ([]byte, error) {
-	request := TTSRequest{
-		Model: ModelTTS1,
+func buildTTSRequest(input string, options *types.TTSOptions) ([]byte, error) {
+	request := types.TTSRequest{
+		Model: types.ModelTTS1,
 		Input: input,
-		Voice: VoiceAlloy,
+		Voice: types.VoiceAlloy,
 	}
 
 	// Apply options if provided
@@ -77,7 +78,7 @@ func buildTTSRequest(input string, options *TTSOptions) ([]byte, error) {
 func callTTS(apiKey string, requestBody []byte) ([]byte, error) {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("POST", EndpointSpeech, bytes.NewReader(requestBody))
+	req, err := http.NewRequest("POST", types.EndpointSpeech, bytes.NewReader(requestBody))
 	if err != nil {
 		return nil, &errors.RequestError{
 			Operation: "creating TTS request",
@@ -110,7 +111,7 @@ func callTTS(apiKey string, requestBody []byte) ([]byte, error) {
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyBytes),
-			Endpoint:   EndpointSpeech,
+			Endpoint:   types.EndpointSpeech,
 		}
 	}
 
@@ -119,7 +120,7 @@ func callTTS(apiKey string, requestBody []byte) ([]byte, error) {
 
 // Text2Speech converts text to speech using OpenAI's TTS API
 // Returns the binary audio data and error
-func Text2Speech(input string, apiKey string, options *TTSOptions) ([]byte, error) {
+func Text2Speech(input string, apiKey string, options *types.TTSOptions) ([]byte, error) {
 	if apiKey == "" {
 		return nil, &errors.ValidationError{
 			Field:   "apiKey",

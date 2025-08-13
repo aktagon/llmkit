@@ -1,4 +1,4 @@
-package anthropic
+package types
 
 // API Configuration Constants
 const (

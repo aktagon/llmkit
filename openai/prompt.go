@@ -8,11 +8,12 @@ import (
 
 	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/httpclient"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 // validateSchema validates that the JSON schema has required top-level attributes
-func validateSchema(schemaJSON string) (SchemaValidation, error) {
-	var schema SchemaValidation
+func validateSchema(schemaJSON string) (types.SchemaValidation, error) {
+	var schema types.SchemaValidation
 
 	if err := json.Unmarshal([]byte(schemaJSON), &schema); err != nil {
 		return schema, &errors.SchemaError{
@@ -53,31 +54,31 @@ func validateSchema(schemaJSON string) (SchemaValidation, error) {
 }
 
 // buildMessageContent creates message content with optional files
-func buildMessageContent(text string, files ...FileUploadResponse) interface{} {
+func buildMessageContent(text string, files ...types.FileUploadResponse) interface{} {
 	if len(files) == 0 {
 		return text
 	}
 
-	parts := []ContentPart{{Type: "text", Text: text}}
+	parts := []types.ContentPart{{Type: "text", Text: text}}
 	for _, file := range files {
-		parts = append(parts, ContentPart{
+		parts = append(parts, types.ContentPart{
 			Type: "file",
-			File: &FileReference{FileID: file.ID},
+			File: &types.FileReference{FileID: file.ID},
 		})
 	}
 	return parts
 }
 
 // buildStructuredRequest creates a structured output request with optional file attachments
-func buildStructuredRequest(systemPrompt, userPrompt string, schema SchemaValidation, files ...FileUploadResponse) ([]byte, error) {
-	request := StructuredRequest{
-		Model: Model,
-		Input: []Message{
+func buildStructuredRequest(systemPrompt, userPrompt string, schema types.SchemaValidation, files ...types.FileUploadResponse) ([]byte, error) {
+	request := types.StructuredRequest{
+		Model: types.Model,
+		Input: []types.Message{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: buildMessageContent(userPrompt, files...)},
 		},
-		Text: TextFormat{
-			Format: JsonSchema{
+		Text: types.TextFormat{
+			Format: types.JsonSchema{
 				Type:   "json_schema",
 				Name:   schema.Name,
 				Schema: schema.Schema,
@@ -98,10 +99,10 @@ func buildStructuredRequest(systemPrompt, userPrompt string, schema SchemaValida
 }
 
 // buildRequest creates a standard chat completion request with optional file attachments
-func buildRequest(systemPrompt, userPrompt string, files ...FileUploadResponse) ([]byte, error) {
-	request := ChatRequest{
-		Model: Model,
-		Messages: []Message{
+func buildRequest(systemPrompt, userPrompt string, files ...types.FileUploadResponse) ([]byte, error) {
+	request := types.ChatRequest{
+		Model: types.Model,
+		Messages: []types.Message{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: buildMessageContent(userPrompt, files...)},
 		},
@@ -163,7 +164,7 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 }
 
 // Prompt sends a prompt request to OpenAI API with optional file attachments
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...FileUploadResponse) (string, error) {
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.FileUploadResponse) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -182,11 +183,11 @@ func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...FileUp
 			return "", err
 		}
 		requestBody, err = buildStructuredRequest(systemPrompt, userPrompt, schema, files...)
-		endpoint = EndpointResponses
+		endpoint = types.EndpointResponses
 	} else {
 		// Use standard chat completion
 		requestBody, err = buildRequest(systemPrompt, userPrompt, files...)
-		endpoint = EndpointCompletions
+		endpoint = types.EndpointCompletions
 	}
 
 	if err != nil {

@@ -12,11 +12,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/aktagon/llmkit/anthropic/types"
 	"github.com/aktagon/llmkit/errors"
 )
 
 // UploadFile uploads a file to Anthropic and returns file metadata
-func UploadFile(filePath, apiKey string) (*File, error) {
+func UploadFile(filePath, apiKey string) (*types.File, error) {
 	if apiKey == "" {
 		return nil, &errors.ValidationError{
 			Field:   "apiKey",
@@ -71,7 +72,7 @@ func UploadFile(filePath, apiKey string) (*File, error) {
 		}
 	}
 
-	req, err := http.NewRequest("POST", FilesEndpoint, &body)
+	req, err := http.NewRequest("POST", types.FilesEndpoint, &body)
 	if err != nil {
 		return nil, &errors.RequestError{
 			Operation: "creating upload request",
@@ -80,8 +81,8 @@ func UploadFile(filePath, apiKey string) (*File, error) {
 	}
 
 	req.Header.Set("x-api-key", apiKey)
-	req.Header.Set("anthropic-version", AnthropicVersion)
-	req.Header.Set("anthropic-beta", FilesBetaHeader)
+	req.Header.Set("anthropic-version", types.AnthropicVersion)
+	req.Header.Set("anthropic-beta", types.FilesBetaHeader)
 	req.Header.Set("content-type", writer.FormDataContentType())
 
 	client := &http.Client{}
@@ -107,11 +108,11 @@ func UploadFile(filePath, apiKey string) (*File, error) {
 			Provider:   "Anthropic",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
-			Endpoint:   FilesEndpoint,
+			Endpoint:   types.FilesEndpoint,
 		}
 	}
 
-	var uploadedFile File
+	var uploadedFile types.File
 	err = json.Unmarshal(bodyText, &uploadedFile)
 	if err != nil {
 		return nil, &errors.RequestError{

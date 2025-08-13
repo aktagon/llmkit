@@ -11,10 +11,11 @@ import (
 	"strings"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 // validateSTTInput validates the audio data and options
-func validateSTTInput(audioData []byte, filename string, options *STTOptions) error {
+func validateSTTInput(audioData []byte, filename string, options *types.STTOptions) error {
 	if len(audioData) == 0 {
 		return &errors.ValidationError{
 			Field:   "audioData",
@@ -59,7 +60,7 @@ func validateSTTInput(audioData []byte, filename string, options *STTOptions) er
 }
 
 // buildSTTRequest creates a multipart form request for transcription
-func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*bytes.Buffer, string, error) {
+func buildSTTRequest(audioData []byte, filename string, options *types.STTOptions) (*bytes.Buffer, string, error) {
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 
@@ -81,7 +82,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 	}
 
 	// Add model (required)
-	model := ModelWhisper1
+	model := types.ModelWhisper1
 	if options != nil && options.Model != "" {
 		model = options.Model
 	}
@@ -164,7 +165,7 @@ func buildSTTRequest(audioData []byte, filename string, options *STTOptions) (*b
 func callSTT(apiKey string, body *bytes.Buffer, contentType string) ([]byte, error) {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("POST", EndpointTranscriptions, body)
+	req, err := http.NewRequest("POST", types.EndpointTranscriptions, body)
 	if err != nil {
 		return nil, &errors.RequestError{
 			Operation: "creating STT request",
@@ -197,7 +198,7 @@ func callSTT(apiKey string, body *bytes.Buffer, contentType string) ([]byte, err
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyBytes),
-			Endpoint:   EndpointTranscriptions,
+			Endpoint:   types.EndpointTranscriptions,
 		}
 	}
 
@@ -206,7 +207,7 @@ func callSTT(apiKey string, body *bytes.Buffer, contentType string) ([]byte, err
 
 // Speech2Text transcribes audio to text using OpenAI's Whisper API
 // Returns the transcribed text and error for simple usage
-func Speech2Text(audioData []byte, filename string, apiKey string, options *STTOptions) (string, error) {
+func Speech2Text(audioData []byte, filename string, apiKey string, options *types.STTOptions) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -229,13 +230,13 @@ func Speech2Text(audioData []byte, filename string, apiKey string, options *STTO
 	}
 
 	// Handle different response formats
-	if options != nil && options.ResponseFormat == STTFormatText {
+	if options != nil && options.ResponseFormat == types.STTFormatText {
 		// For text format, the response is plain text
 		return string(responseBytes), nil
 	}
 
 	// For JSON formats, parse the response
-	var response STTResponse
+	var response types.STTResponse
 	err = json.Unmarshal(responseBytes, &response)
 	if err != nil {
 		return "", &errors.RequestError{
@@ -249,7 +250,7 @@ func Speech2Text(audioData []byte, filename string, apiKey string, options *STTO
 
 // Speech2TextDetailed transcribes audio and returns detailed response with metadata
 // Use this when you need timestamps, segments, or other metadata
-func Speech2TextDetailed(audioData []byte, filename string, apiKey string, options *STTOptions) (*STTResponse, error) {
+func Speech2TextDetailed(audioData []byte, filename string, apiKey string, options *types.STTOptions) (*types.STTResponse, error) {
 	if apiKey == "" {
 		return nil, &errors.ValidationError{
 			Field:   "apiKey",
@@ -263,9 +264,9 @@ func Speech2TextDetailed(audioData []byte, filename string, apiKey string, optio
 
 	// Force JSON format for detailed response
 	if options == nil {
-		options = &STTOptions{ResponseFormat: STTFormatJSON}
-	} else if options.ResponseFormat == "" || options.ResponseFormat == STTFormatText {
-		options.ResponseFormat = STTFormatJSON
+		options = &types.STTOptions{ResponseFormat: types.STTFormatJSON}
+	} else if options.ResponseFormat == "" || options.ResponseFormat == types.STTFormatText {
+		options.ResponseFormat = types.STTFormatJSON
 	}
 
 	body, contentType, err := buildSTTRequest(audioData, filename, options)
@@ -278,7 +279,7 @@ func Speech2TextDetailed(audioData []byte, filename string, apiKey string, optio
 		return nil, err
 	}
 
-	var response STTResponse
+	var response types.STTResponse
 	err = json.Unmarshal(responseBytes, &response)
 	if err != nil {
 		return nil, &errors.RequestError{

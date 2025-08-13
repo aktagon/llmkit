@@ -11,10 +11,11 @@ import (
 	"path/filepath"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 // UploadFile uploads a file to OpenAI and returns file metadata
-func UploadFile(filePath, purpose, apiKey string) (*FileUploadResponse, error) {
+func UploadFile(filePath, purpose, apiKey string) (*types.FileUploadResponse, error) {
 	if apiKey == "" {
 		return nil, &errors.ValidationError{
 			Field:   "apiKey",
@@ -74,7 +75,7 @@ func UploadFile(filePath, purpose, apiKey string) (*FileUploadResponse, error) {
 		}
 	}
 
-	req, err := http.NewRequest("POST", EndpointFiles, &body)
+	req, err := http.NewRequest("POST", types.EndpointFiles, &body)
 	if err != nil {
 		return nil, &errors.RequestError{
 			Operation: "creating upload request",
@@ -108,11 +109,11 @@ func UploadFile(filePath, purpose, apiKey string) (*FileUploadResponse, error) {
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
-			Endpoint:   EndpointFiles,
+			Endpoint:   types.EndpointFiles,
 		}
 	}
 
-	var uploadResponse FileUploadResponse
+	var uploadResponse types.FileUploadResponse
 	err = json.Unmarshal(bodyText, &uploadResponse)
 	if err != nil {
 		return nil, &errors.RequestError{

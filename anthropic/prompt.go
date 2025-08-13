@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aktagon/llmkit/anthropic/types"
 	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/httpclient"
 )
 
 // validateSchema checks if the provided JSON schema has required top-level attributes
-func validateSchema(schemaStr string) (*JsonSchema, error) {
-	var schema JsonSchema
+func validateSchema(schemaStr string) (*types.JsonSchema, error) {
+	var schema types.JsonSchema
 	if err := json.Unmarshal([]byte(schemaStr), &schema); err != nil {
 		return nil, &errors.SchemaError{
 			Field:   "json",
@@ -66,17 +67,17 @@ func buildPrompt(userPrompt, jsonSchema string) (string, error) {
 }
 
 // buildRequest creates the JSON request body for the Anthropic API
-func buildRequest(systemPrompt, userPrompt string, files []File) (string, error) {
+func buildRequest(systemPrompt, userPrompt string, files []types.File) (string, error) {
 	var content interface{}
 
 	if len(files) == 0 {
 		content = userPrompt
 	} else {
-		blocks := []Content{{Type: "text", Text: userPrompt}}
+		blocks := []types.Content{{Type: "text", Text: userPrompt}}
 		for _, file := range files {
-			blocks = append(blocks, Content{
+			blocks = append(blocks, types.Content{
 				Type:   "document",
-				Source: &FileSource{Type: "file", FileID: file.ID},
+				Source: &types.FileSource{Type: "file", FileID: file.ID},
 			})
 		}
 		content = blocks
@@ -87,8 +88,8 @@ func buildRequest(systemPrompt, userPrompt string, files []File) (string, error)
 	}
 
 	requestBody := map[string]interface{}{
-		"model":      Model,
-		"max_tokens": MaxTokens,
+		"model":      types.Model,
+		"max_tokens": types.MaxTokens,
 		"messages":   messages,
 	}
 
@@ -120,8 +121,8 @@ func call(endpoint, apiKey string, requestBody string) (string, error) {
 	}
 
 	req.Header.Set("x-api-key", apiKey)
-	req.Header.Set("anthropic-version", AnthropicVersion)
-	req.Header.Set("anthropic-beta", FilesBetaHeader)
+	req.Header.Set("anthropic-version", types.AnthropicVersion)
+	req.Header.Set("anthropic-beta", types.FilesBetaHeader)
 	req.Header.Set("content-type", "application/json")
 
 	resp, err := client.Do(req)
@@ -154,7 +155,7 @@ func call(endpoint, apiKey string, requestBody string) (string, error) {
 }
 
 // Prompt sends a prompt request to Anthropic API with optional file attachments
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) (string, error) {
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.File) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -175,7 +176,7 @@ func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) 
 	}
 
 	// Make the API call
-	response, err := call(Endpoint, apiKey, requestBody)
+	response, err := call(types.Endpoint, apiKey, requestBody)
 	if err != nil {
 		return "", fmt.Errorf("calling Anthropic API: %w", err)
 	}

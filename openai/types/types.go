@@ -1,4 +1,4 @@
-package openai
+package types
 
 // API Configuration Constants
 const (

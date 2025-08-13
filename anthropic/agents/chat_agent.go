@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aktagon/llmkit/anthropic"
+	"github.com/aktagon/llmkit/anthropic/types"
 	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/httpclient"
 )
@@ -36,8 +36,8 @@ type ChatOptions struct {
 
 // ChatResponse contains both extracted text and full raw response
 type ChatResponse struct {
-	Text string                       // Extracted text response
-	Raw  *anthropic.AnthropicResponse // Full API response
+	Text string                   // Extracted text response
+	Raw  *types.AnthropicResponse // Full API response
 }
 
 // ChatAgent maintains conversation state and handles tool execution
@@ -45,9 +45,9 @@ type ChatAgent struct {
 	client     *http.Client
 	apiKey     string
 	model      string
-	messages   []anthropic.Message // Conversation memory
+	messages   []types.Message // Conversation memory
 	memory     map[string]string   // Persistent key-value memory
-	tools      map[string]anthropic.Tool
+	tools      map[string]types.Tool
 	memoryMode MemoryMode // Controls memory behavior
 	memoryFile string     // Path for memory persistence
 }
@@ -64,10 +64,10 @@ func New(apiKey string, opts ...AgentOption) (*ChatAgent, error) {
 	agent := &ChatAgent{
 		client:     httpclient.NewClient(),
 		apiKey:     apiKey,
-		model:      anthropic.Model,
-		messages:   make([]anthropic.Message, 0),
+		model:      types.Model,
+		messages:   make([]types.Message, 0),
 		memory:     make(map[string]string),
-		tools:      make(map[string]anthropic.Tool),
+		tools:      make(map[string]types.Tool),
 		memoryMode: MemoryDisabled,
 	}
 
@@ -107,7 +107,7 @@ func WithMemoryPersistence(filepath string) AgentOption {
 }
 
 // RegisterTool adds a tool that Claude can use
-func (ca *ChatAgent) RegisterTool(tool anthropic.Tool) error {
+func (ca *ChatAgent) RegisterTool(tool types.Tool) error {
 	if tool.Name == "" {
 		return &errors.ValidationError{
 			Field:   "name",
@@ -140,7 +140,7 @@ func (ca *ChatAgent) RegisterTool(tool anthropic.Tool) error {
 // registerMemoryTools adds remember_fact and recall_fact tools
 func (ca *ChatAgent) registerMemoryTools() error {
 	// Remember tool
-	rememberTool := anthropic.Tool{
+	rememberTool := types.Tool{
 		Name:        "remember_fact",
 		Description: "Store important information about the user for future conversations",
 		InputSchema: map[string]interface{}{
@@ -170,7 +170,7 @@ func (ca *ChatAgent) registerMemoryTools() error {
 	}
 
 	// Recall tool
-	recallTool := anthropic.Tool{
+	recallTool := types.Tool{
 		Name:        "recall_fact",
 		Description: "Retrieve previously stored information about the user",
 		InputSchema: map[string]interface{}{
@@ -243,9 +243,9 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 	// Note: System prompts are handled in sendRequest for Anthropic API
 
 	// Add user message to conversation history
-	userMessage := anthropic.Message{
+	userMessage := types.Message{
 		Role: "user",
-		Content: []anthropic.Content{{
+		Content: []types.Content{{
 			Type: "text",
 			Text: message,
 		}},
@@ -261,7 +261,7 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 		}
 
 		// Add Claude's response to conversation history
-		assistantMessage := anthropic.Message{
+		assistantMessage := types.Message{
 			Role:    "assistant",
 			Content: response.Content,
 		}
@@ -286,12 +286,12 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 }
 
 // sendRequest sends the current conversation to Claude
-func (ca *ChatAgent) sendRequest(options *ChatOptions) (*anthropic.AnthropicResponse, error) {
+func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.AnthropicResponse, error) {
 	// Handle schema by modifying the last user message if schema is provided
 	messages := ca.messages
 	if options != nil && options.Schema != "" {
 		// Make a copy to avoid modifying the original
-		messages = make([]anthropic.Message, len(ca.messages))
+		messages = make([]types.Message, len(ca.messages))
 		copy(messages, ca.messages)
 
 		// Find the last user message and append schema instructions
@@ -309,7 +309,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*anthropic.AnthropicResp
 
 	requestBody := map[string]interface{}{
 		"model":      ca.model,
-		"max_tokens": anthropic.MaxTokens,
+		"max_tokens": types.MaxTokens,
 		"messages":   messages,
 	}
 
@@ -352,7 +352,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*anthropic.AnthropicResp
 		}
 	}
 
-	req, err := http.NewRequest("POST", anthropic.Endpoint, strings.NewReader(string(jsonData)))
+	req, err := http.NewRequest("POST", types.Endpoint, strings.NewReader(string(jsonData)))
 	if err != nil {
 		return nil, &errors.RequestError{
 			Operation: "creating request",
@@ -361,7 +361,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*anthropic.AnthropicResp
 	}
 
 	req.Header.Set("x-api-key", ca.apiKey)
-	req.Header.Set("anthropic-version", anthropic.AnthropicVersion)
+	req.Header.Set("anthropic-version", types.AnthropicVersion)
 	req.Header.Set("content-type", "application/json")
 
 	resp, err := ca.client.Do(req)
@@ -386,11 +386,11 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*anthropic.AnthropicResp
 			Provider:   "Anthropic",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
-			Endpoint:   anthropic.Endpoint,
+			Endpoint:   types.Endpoint,
 		}
 	}
 
-	var anthropicResp anthropic.AnthropicResponse
+	var anthropicResp types.AnthropicResponse
 	if err := json.Unmarshal(bodyText, &anthropicResp); err != nil {
 		return nil, &errors.RequestError{
 			Operation: "parsing response",
@@ -402,11 +402,11 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*anthropic.AnthropicResp
 }
 
 // extractToolCalls extracts tool calls from Claude's response content
-func (ca *ChatAgent) extractToolCalls(content []anthropic.Content) []anthropic.ToolCall {
-	var toolCalls []anthropic.ToolCall
+func (ca *ChatAgent) extractToolCalls(content []types.Content) []types.ToolCall {
+	var toolCalls []types.ToolCall
 	for _, c := range content {
 		if c.Type == "tool_use" {
-			toolCalls = append(toolCalls, anthropic.ToolCall{
+			toolCalls = append(toolCalls, types.ToolCall{
 				ID:    c.ID,
 				Name:  c.Name,
 				Input: c.Input,
@@ -417,7 +417,7 @@ func (ca *ChatAgent) extractToolCalls(content []anthropic.Content) []anthropic.T
 }
 
 // extractTextResponse extracts text content from Claude's response
-func (ca *ChatAgent) extractTextResponse(content []anthropic.Content) string {
+func (ca *ChatAgent) extractTextResponse(content []types.Content) string {
 	var textParts []string
 	for _, c := range content {
 		if c.Type == "text" && c.Text != "" {
@@ -428,8 +428,8 @@ func (ca *ChatAgent) extractTextResponse(content []anthropic.Content) string {
 }
 
 // executeToolCalls executes tool calls and adds results to conversation
-func (ca *ChatAgent) executeToolCalls(toolCalls []anthropic.ToolCall) error {
-	var toolResults []anthropic.Content
+func (ca *ChatAgent) executeToolCalls(toolCalls []types.ToolCall) error {
+	var toolResults []types.Content
 
 	for _, toolCall := range toolCalls {
 		tool, exists := ca.tools[toolCall.Name]
@@ -447,7 +447,7 @@ func (ca *ChatAgent) executeToolCalls(toolCalls []anthropic.ToolCall) error {
 		}
 
 		// Add tool result to results
-		toolResults = append(toolResults, anthropic.Content{
+		toolResults = append(toolResults, types.Content{
 			Type:      "tool_result",
 			ToolUseID: toolCall.ID,
 			Content:   result,
@@ -455,7 +455,7 @@ func (ca *ChatAgent) executeToolCalls(toolCalls []anthropic.ToolCall) error {
 	}
 
 	// Add tool results as a user message
-	toolMessage := anthropic.Message{
+	toolMessage := types.Message{
 		Role:    "user",
 		Content: toolResults,
 	}
@@ -499,7 +499,7 @@ func (ca *ChatAgent) GetMemory() map[string]string {
 
 // Reset clears conversation history and optionally persistent memory
 func (ca *ChatAgent) Reset(clearMemory bool) error {
-	ca.messages = make([]anthropic.Message, 0)
+	ca.messages = make([]types.Message, 0)
 	if clearMemory {
 		return ca.ClearMemory()
 	}

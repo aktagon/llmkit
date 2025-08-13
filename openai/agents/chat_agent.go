@@ -10,7 +10,7 @@ import (
 
 	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/httpclient"
-	"github.com/aktagon/llmkit/openai"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 // MemoryMode controls memory behavior using bitwise flags
@@ -36,8 +36,8 @@ type ChatOptions struct {
 
 // ChatResponse contains both extracted text and full raw response
 type ChatResponse struct {
-	Text string           // Extracted text response
-	Raw  *openai.Response // Full API response
+	Text string         // Extracted text response
+	Raw  *types.Response // Full API response
 }
 
 // ChatAgent maintains conversation state and handles tool execution
@@ -45,9 +45,9 @@ type ChatAgent struct {
 	client     *http.Client
 	apiKey     string
 	model      string
-	messages   []openai.Message  // Conversation memory
+	messages   []types.Message  // Conversation memory
 	memory     map[string]string // Persistent key-value memory
-	tools      map[string]openai.Tool
+	tools      map[string]types.Tool
 	memoryMode MemoryMode // Controls memory behavior
 	memoryFile string     // Path for memory persistence
 }
@@ -64,10 +64,10 @@ func New(apiKey string, opts ...AgentOption) (*ChatAgent, error) {
 	agent := &ChatAgent{
 		client:     httpclient.NewClient(),
 		apiKey:     apiKey,
-		model:      openai.Model,
-		messages:   make([]openai.Message, 0),
+		model:      types.Model,
+		messages:   make([]types.Message, 0),
 		memory:     make(map[string]string),
-		tools:      make(map[string]openai.Tool),
+		tools:      make(map[string]types.Tool),
 		memoryMode: MemoryDisabled,
 	}
 
@@ -107,7 +107,7 @@ func WithMemoryPersistence(filepath string) AgentOption {
 }
 
 // RegisterTool adds a tool that GPT can use
-func (ca *ChatAgent) RegisterTool(tool openai.Tool) error {
+func (ca *ChatAgent) RegisterTool(tool types.Tool) error {
 	if tool.Name == "" {
 		return &errors.ValidationError{
 			Field:   "name",
@@ -140,7 +140,7 @@ func (ca *ChatAgent) RegisterTool(tool openai.Tool) error {
 // registerMemoryTools adds remember_fact and recall_fact tools
 func (ca *ChatAgent) registerMemoryTools() error {
 	// Remember tool
-	rememberTool := openai.Tool{
+	rememberTool := types.Tool{
 		Name:        "remember_fact",
 		Description: "Store important information about the user for future conversations",
 		Parameters: map[string]interface{}{
@@ -170,7 +170,7 @@ func (ca *ChatAgent) registerMemoryTools() error {
 	}
 
 	// Recall tool
-	recallTool := openai.Tool{
+	recallTool := types.Tool{
 		Name:        "recall_fact",
 		Description: "Retrieve previously stored information about the user",
 		Parameters: map[string]interface{}{
@@ -241,7 +241,7 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 	}
 
 	// Add user message to conversation history
-	userMessage := openai.Message{
+	userMessage := types.Message{
 		Role:    "user",
 		Content: message,
 	}
@@ -256,7 +256,7 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 		}
 
 		// Add GPT's response to conversation history
-		assistantMessage := openai.Message{
+		assistantMessage := types.Message{
 			Role:         "assistant",
 			Content:      response.Choices[0].Message.Content,
 			FunctionCall: response.Choices[0].Message.FunctionCall,
@@ -282,9 +282,9 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 }
 
 // sendRequest sends the current conversation to GPT
-func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error) {
+func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.Response, error) {
 	// Prepare messages with system prompt if needed
-	messages := make([]openai.Message, 0, len(ca.messages)+1)
+	messages := make([]types.Message, 0, len(ca.messages)+1)
 
 	// Add system message if we have memory context or system prompt
 	systemPrompt := ""
@@ -295,7 +295,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 	}
 
 	if systemPrompt != "" {
-		systemMessage := openai.Message{
+		systemMessage := types.Message{
 			Role:    "system",
 			Content: systemPrompt,
 		}
@@ -327,7 +327,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 	// Handle schema using structured output in chat completions
 	if options != nil && options.Schema != "" {
 		// Parse schema validation
-		var schema openai.SchemaValidation
+		var schema types.SchemaValidation
 		if err := json.Unmarshal([]byte(options.Schema), &schema); err != nil {
 			return nil, &errors.RequestError{
 				Operation: "parsing schema",
@@ -358,9 +358,9 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 
 	// Add functions if any are registered
 	if len(ca.tools) > 0 {
-		functions := make([]openai.Function, 0, len(ca.tools))
+		functions := make([]types.Function, 0, len(ca.tools))
 		for _, tool := range ca.tools {
-			functions = append(functions, openai.Function{
+			functions = append(functions, types.Function{
 				Name:        tool.Name,
 				Description: tool.Description,
 				Parameters:  tool.Parameters,
@@ -378,7 +378,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 		}
 	}
 
-	req, err := http.NewRequest("POST", openai.EndpointCompletions, strings.NewReader(string(jsonData)))
+	req, err := http.NewRequest("POST", types.EndpointCompletions, strings.NewReader(string(jsonData)))
 	if err != nil {
 		return nil, &errors.RequestError{
 			Operation: "creating request",
@@ -411,11 +411,11 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
-			Endpoint:   openai.EndpointCompletions,
+			Endpoint:   types.EndpointCompletions,
 		}
 	}
 
-	var openaiResp openai.Response
+	var openaiResp types.Response
 	if err := json.Unmarshal(bodyText, &openaiResp); err != nil {
 		return nil, &errors.RequestError{
 			Operation: "parsing response",
@@ -427,8 +427,8 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 }
 
 // extractToolCalls extracts tool calls from GPT's response
-func (ca *ChatAgent) extractToolCalls(response *openai.Response) []openai.FunctionCall {
-	var toolCalls []openai.FunctionCall
+func (ca *ChatAgent) extractToolCalls(response *types.Response) []types.FunctionCall {
+	var toolCalls []types.FunctionCall
 	if len(response.Choices) > 0 && response.Choices[0].Message.FunctionCall != nil {
 		toolCalls = append(toolCalls, *response.Choices[0].Message.FunctionCall)
 	}
@@ -436,7 +436,7 @@ func (ca *ChatAgent) extractToolCalls(response *openai.Response) []openai.Functi
 }
 
 // extractTextResponse extracts text content from GPT's response
-func (ca *ChatAgent) extractTextResponse(response *openai.Response) string {
+func (ca *ChatAgent) extractTextResponse(response *types.Response) string {
 	if len(response.Choices) > 0 {
 		return response.Choices[0].Message.Content
 	}
@@ -444,7 +444,7 @@ func (ca *ChatAgent) extractTextResponse(response *openai.Response) string {
 }
 
 // executeToolCalls executes tool calls and adds results to conversation
-func (ca *ChatAgent) executeToolCalls(toolCalls []openai.FunctionCall) error {
+func (ca *ChatAgent) executeToolCalls(toolCalls []types.FunctionCall) error {
 	for _, toolCall := range toolCalls {
 		tool, exists := ca.tools[toolCall.Name]
 		if !exists {
@@ -470,7 +470,7 @@ func (ca *ChatAgent) executeToolCalls(toolCalls []openai.FunctionCall) error {
 		}
 
 		// Add tool result as a function message
-		functionMessage := openai.Message{
+		functionMessage := types.Message{
 			Role:    "function",
 			Name:    toolCall.Name,
 			Content: result,
@@ -516,7 +516,7 @@ func (ca *ChatAgent) GetMemory() map[string]string {
 
 // Reset clears conversation history and optionally persistent memory
 func (ca *ChatAgent) Reset(clearMemory bool) error {
-	ca.messages = make([]openai.Message, 0)
+	ca.messages = make([]types.Message, 0)
 	if clearMemory {
 		return ca.ClearMemory()
 	}
