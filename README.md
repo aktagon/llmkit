@@ -144,9 +144,9 @@ llmkit-google \
   "$(cat examples/google/schemas/weather-schema.json)"
 ```
 
-## Programmatic Usage
+## API
 
-### As a Library
+### Simple Prompting
 
 ```go
 package main
@@ -156,54 +156,27 @@ import (
     "log"
     "os"
 
-    "github.com/aktagon/llmkit/anthropic"
-    "github.com/aktagon/llmkit/openai"
-    "github.com/aktagon/llmkit/google"
+    "github.com/aktagon/llmkit"
 )
 
 func main() {
-    // Anthropic example
-    anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
-    response, err := anthropic.Prompt(
-        "You are a helpful assistant",
-        "What is the capital of France?",
-        "", // no schema for simple prompt
-        anthropicKey,
-    )
+    // Works with any provider
+    response, err := llmkit.Prompt(llmkit.PromptOptions{
+        Provider:     llmkit.ProviderOpenAI,
+        SystemPrompt: "You are a helpful assistant",
+        UserPrompt:   "What is the capital of France?",
+        APIKey:       os.Getenv("OPENAI_API_KEY"),
+    })
     if err != nil {
         log.Fatal(err)
     }
-    fmt.Println("Anthropic:", response)
-
-    // OpenAI example
-    openaiKey := os.Getenv("OPENAI_API_KEY")
-    response, err = openai.Prompt(
-        "You are a helpful assistant",
-        "What is the capital of France?",
-        "", // no schema for simple prompt
-        openaiKey,
-    )
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Println("OpenAI:", response)
-
-    // Google example
-    googleKey := os.Getenv("GOOGLE_API_KEY")
-    response, err = google.Prompt(
-        "You are a helpful assistant",
-        "What is the capital of France?",
-        "", // no schema for simple prompt
-        googleKey,
-    )
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Println("Google:", response)
+    fmt.Println("Response:", response)
 }
 ```
 
-### Structured Output Example
+### Conversational Agents
+
+For multi-turn conversations with memory and tools:
 
 ```go
 package main
@@ -213,7 +186,43 @@ import (
     "log"
     "os"
 
-    "github.com/aktagon/llmkit/openai"
+    "github.com/aktagon/llmkit"
+)
+
+func main() {
+    // Create conversational agent
+    agent, err := llmkit.Agent(llmkit.ProviderOpenAI, os.Getenv("OPENAI_API_KEY"))
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Chat with memory
+    response, err := agent.Chat("Hello! My name is John.")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("Agent:", response)
+
+    // Continue conversation
+    response, err = agent.Chat("What's my name?")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("Agent:", response)
+}
+```
+
+### Structured Output
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "os"
+
+    "github.com/aktagon/llmkit"
 )
 
 func main() {
@@ -233,12 +242,13 @@ func main() {
         }
     }`
 
-    response, err := openai.Prompt(
-        "You are a weather assistant.",
-        "What's the weather in Tokyo? Use Celsius.",
-        schema,
-        os.Getenv("OPENAI_API_KEY"),
-    )
+    response, err := llmkit.Prompt(llmkit.PromptOptions{
+        Provider:     llmkit.ProviderOpenAI,
+        SystemPrompt: "You are a weather assistant.",
+        UserPrompt:   "What's the weather in Tokyo? Use Celsius.",
+        JSONSchema:   schema,
+        APIKey:       os.Getenv("OPENAI_API_KEY"),
+    })
     if err != nil {
         log.Fatal(err)
     }
@@ -288,12 +298,14 @@ if err != nil {
 Enable request/response logging for debugging:
 
 **Environment variables:**
+
 ```bash
 export LLMKIT_LOG_HTTP=true
 export LLMKIT_LOG_LEVEL=info    # or debug for request/response bodies
 ```
 
 **Configuration file (`llmkit.yaml`):**
+
 ```yaml
 logging:
   http: true
@@ -301,6 +313,7 @@ logging:
 ```
 
 **Example output:**
+
 ```
 2025/08/13 17:05:53 INFO HTTP request provider=anthropic method=POST url=https://api.anthropic.com/v1/messages duration=10.233s status=200
 ```

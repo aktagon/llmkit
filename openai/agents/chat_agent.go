@@ -305,6 +305,20 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*openai.Response, error)
 	// Add conversation messages
 	messages = append(messages, ca.messages...)
 
+	// Handle schema by modifying the last user message if schema is provided
+	if options != nil && options.Schema != "" {
+		// Find the last user message and append schema instructions
+		for i := len(messages) - 1; i >= 0; i-- {
+			if messages[i].Role == "user" {
+				schemaInstructions := fmt.Sprintf("\n\nYou must output only the raw JSON without further explanation or formatting. Use the following JSON schema for the output format:\n\n%s", options.Schema)
+				if content, ok := messages[i].Content.(string); ok {
+					messages[i].Content = content + schemaInstructions
+				}
+				break
+			}
+		}
+	}
+
 	requestBody := map[string]interface{}{
 		"model":    ca.model,
 		"messages": messages,

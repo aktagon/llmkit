@@ -1,12 +1,14 @@
 package llmkit
 
 import (
+	"context"
 	"fmt"
 
-	anthropic "github.com/aktagon/llmkit/anthropic"
+	"github.com/aktagon/llmkit/anthropic"
 	"github.com/aktagon/llmkit/errors"
-	google "github.com/aktagon/llmkit/google"
-	openai "github.com/aktagon/llmkit/openai"
+	"github.com/aktagon/llmkit/google"
+	"github.com/aktagon/llmkit/internal"
+	"github.com/aktagon/llmkit/openai"
 )
 
 // Provider represents the LLM provider type
@@ -20,11 +22,12 @@ const (
 
 // PromptOptions configures the prompt request
 type PromptOptions struct {
-	Provider     Provider // Which LLM provider to use
-	SystemPrompt string   // System prompt for the request
-	UserPrompt   string   // User prompt for the request
-	JSONSchema   string   // Optional JSON schema for structured output
-	APIKey       string   // API key for the provider
+	Provider     Provider       // Which LLM provider to use
+	SystemPrompt string         // System prompt for the request
+	UserPrompt   string         // User prompt for the request
+	JSONSchema   string         // Optional JSON schema for structured output
+	APIKey       string         // API key for the provider
+	Files        []internal.File // Optional file attachments
 }
 
 // Prompt sends a prompt request to the specified LLM provider
@@ -36,19 +39,24 @@ func Prompt(opts PromptOptions) (string, error) {
 		}
 	}
 
+	ctx := context.Background()
+	var provider internal.Provider
+
 	switch opts.Provider {
 	case ProviderOpenAI:
-		return openai.Prompt(opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey)
+		provider = openai.NewProvider()
 	case ProviderAnthropic:
-		return anthropic.Prompt(opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey)
+		provider = anthropic.NewProvider()
 	case ProviderGoogle:
-		return google.Prompt(opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey)
+		provider = google.NewProvider()
 	default:
 		return "", &errors.ValidationError{
 			Field:   "provider",
 			Message: fmt.Sprintf("unsupported provider: %s", opts.Provider),
 		}
 	}
+
+	return provider.Prompt(ctx, opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey, opts.Files...)
 }
 
 // PromptOpenAI is a convenience function for OpenAI prompts
