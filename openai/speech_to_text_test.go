@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 func TestValidateSTTInput(t *testing.T) {
@@ -12,7 +13,7 @@ func TestValidateSTTInput(t *testing.T) {
 		name        string
 		audioData   []byte
 		filename    string
-		options     *STTOptions
+		options     *types.STTOptions
 		expectError bool
 		errorType   string
 	}{
@@ -67,7 +68,7 @@ func TestValidateSTTInput(t *testing.T) {
 			name:        "invalid temperature too low",
 			audioData:   []byte("fake audio data"),
 			filename:    "test.wav",
-			options:     &STTOptions{Temperature: -0.1},
+			options:     &types.STTOptions{Temperature: -0.1},
 			expectError: true,
 			errorType:   "ValidationError",
 		},
@@ -75,7 +76,7 @@ func TestValidateSTTInput(t *testing.T) {
 			name:        "invalid temperature too high",
 			audioData:   []byte("fake audio data"),
 			filename:    "test.wav",
-			options:     &STTOptions{Temperature: 1.1},
+			options:     &types.STTOptions{Temperature: 1.1},
 			expectError: true,
 			errorType:   "ValidationError",
 		},
@@ -83,7 +84,7 @@ func TestValidateSTTInput(t *testing.T) {
 			name:        "valid temperature range",
 			audioData:   []byte("fake audio data"),
 			filename:    "test.flac",
-			options:     &STTOptions{Temperature: 0.5},
+			options:     &types.STTOptions{Temperature: 0.5},
 			expectError: false,
 		},
 		{
@@ -125,7 +126,7 @@ func TestBuildSTTRequest(t *testing.T) {
 		name      string
 		audioData []byte
 		filename  string
-		options   *STTOptions
+		options   *types.STTOptions
 	}{
 		{
 			name:      "default options",
@@ -137,15 +138,15 @@ func TestBuildSTTRequest(t *testing.T) {
 			name:      "custom options",
 			audioData: []byte("fake audio data"),
 			filename:  "test.wav",
-			options: &STTOptions{
-				Model:          ModelGPT4OTranscribe,
+			options: &types.STTOptions{
+				Model:          types.ModelGPT4OTranscribe,
 				Language:       "en",
 				Prompt:         "This is a test prompt",
-				ResponseFormat: STTFormatVerboseJSON,
+				ResponseFormat: types.STTFormatVerboseJSON,
 				Temperature:    0.3,
-				TimestampGranularities: []TimestampGranularity{
-					GranularityWord,
-					GranularitySegment,
+				TimestampGranularities: []types.TimestampGranularity{
+					types.GranularityWord,
+					types.GranularitySegment,
 				},
 			},
 		},
@@ -153,7 +154,7 @@ func TestBuildSTTRequest(t *testing.T) {
 			name:      "partial options",
 			audioData: []byte("fake audio data"),
 			filename:  "recording.flac",
-			options: &STTOptions{
+			options: &types.STTOptions{
 				Language: "es",
 				Prompt:   "Spanish audio",
 			},
@@ -189,7 +190,7 @@ func TestSpeech2Text_ValidationErrors(t *testing.T) {
 		audioData []byte
 		filename  string
 		apiKey    string
-		options   *STTOptions
+		options   *types.STTOptions
 		errorType string
 	}{
 		{
@@ -221,7 +222,7 @@ func TestSpeech2Text_ValidationErrors(t *testing.T) {
 			audioData: []byte("fake audio data"),
 			filename:  "test.mp3",
 			apiKey:    "test-key",
-			options:   &STTOptions{Temperature: 2.0},
+			options:   &types.STTOptions{Temperature: 2.0},
 			errorType: "ValidationError",
 		},
 	}
@@ -251,7 +252,7 @@ func TestSpeech2TextDetailed_ValidationErrors(t *testing.T) {
 		audioData []byte
 		filename  string
 		apiKey    string
-		options   *STTOptions
+		options   *types.STTOptions
 		errorType string
 	}{
 		{

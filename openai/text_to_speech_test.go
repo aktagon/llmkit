@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/openai/types"
 )
 
 func TestValidateTTSInput(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       string
-		options     *TTSOptions
+		options     *types.TTSOptions
 		expectError bool
 		errorType   string
 	}{
@@ -44,21 +45,21 @@ func TestValidateTTSInput(t *testing.T) {
 		{
 			name:        "invalid speed too low",
 			input:       "Hello world",
-			options:     &TTSOptions{Speed: 0.1},
+			options:     &types.TTSOptions{Speed: 0.1},
 			expectError: true,
 			errorType:   "ValidationError",
 		},
 		{
 			name:        "invalid speed too high",
 			input:       "Hello world",
-			options:     &TTSOptions{Speed: 5.0},
+			options:     &types.TTSOptions{Speed: 5.0},
 			expectError: true,
 			errorType:   "ValidationError",
 		},
 		{
 			name:        "valid speed range",
 			input:       "Hello world",
-			options:     &TTSOptions{Speed: 1.5},
+			options:     &types.TTSOptions{Speed: 1.5},
 			expectError: false,
 		},
 	}
@@ -92,47 +93,47 @@ func TestBuildTTSRequest(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		options  *TTSOptions
-		expected TTSRequest
+		options  *types.TTSOptions
+		expected types.TTSRequest
 	}{
 		{
 			name:    "default options",
 			input:   "Hello world",
 			options: nil,
-			expected: TTSRequest{
-				Model: ModelTTS1,
+			expected: types.TTSRequest{
+				Model: types.ModelTTS1,
 				Input: "Hello world",
-				Voice: VoiceAlloy,
+				Voice: types.VoiceAlloy,
 			},
 		},
 		{
 			name:  "custom options",
 			input: "Custom test",
-			options: &TTSOptions{
-				Model:          ModelTTS1HD,
-				Voice:          VoiceNova,
-				ResponseFormat: FormatWAV,
+			options: &types.TTSOptions{
+				Model:          types.ModelTTS1HD,
+				Voice:          types.VoiceNova,
+				ResponseFormat: types.FormatWAV,
 				Speed:          1.5,
 			},
-			expected: TTSRequest{
-				Model:          ModelTTS1HD,
+			expected: types.TTSRequest{
+				Model:          types.ModelTTS1HD,
 				Input:          "Custom test",
-				Voice:          VoiceNova,
-				ResponseFormat: FormatWAV,
+				Voice:          types.VoiceNova,
+				ResponseFormat: types.FormatWAV,
 				Speed:          1.5,
 			},
 		},
 		{
 			name:  "partial options",
 			input: "Partial test",
-			options: &TTSOptions{
-				Voice: VoiceEcho,
+			options: &types.TTSOptions{
+				Voice: types.VoiceEcho,
 				Speed: 2.0,
 			},
-			expected: TTSRequest{
-				Model: ModelTTS1,
+			expected: types.TTSRequest{
+				Model: types.ModelTTS1,
 				Input: "Partial test",
-				Voice: VoiceEcho,
+				Voice: types.VoiceEcho,
 				Speed: 2.0,
 			},
 		},
@@ -162,7 +163,7 @@ func TestText2Speech_ValidationErrors(t *testing.T) {
 		name      string
 		input     string
 		apiKey    string
-		options   *TTSOptions
+		options   *types.TTSOptions
 		errorType string
 	}{
 		{
@@ -183,7 +184,7 @@ func TestText2Speech_ValidationErrors(t *testing.T) {
 			name:      "invalid speed",
 			input:     "Hello world",
 			apiKey:    "test-key",
-			options:   &TTSOptions{Speed: 10.0},
+			options:   &types.TTSOptions{Speed: 10.0},
 			errorType: "ValidationError",
 		},
 	}

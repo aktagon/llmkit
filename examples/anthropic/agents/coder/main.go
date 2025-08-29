@@ -8,13 +8,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aktagon/llmkit/anthropic"
 	"github.com/aktagon/llmkit/anthropic/agents"
+	"github.com/aktagon/llmkit/anthropic/types"
 )
 
 // registerReadFileTool adds file reading capability
 func registerReadFileTool(agent *agents.ChatAgent) error {
-	tool := anthropic.Tool{
+	tool := types.Tool{
 		Name:        "read_file",
 		Description: "Read the contents of a file at the given path. Use this when you want to see what's inside a file. Do not use this with directory names.",
 		InputSchema: map[string]interface{}{
@@ -48,7 +48,7 @@ func registerReadFileTool(agent *agents.ChatAgent) error {
 
 // registerListFilesTool adds file listing capability
 func registerListFilesTool(agent *agents.ChatAgent) error {
-	tool := anthropic.Tool{
+	tool := types.Tool{
 		Name:        "list_files",
 		Description: "List files and directories in a given path. If no path is provided, lists files in the current directory.",
 		InputSchema: map[string]interface{}{
@@ -107,7 +107,7 @@ func registerListFilesTool(agent *agents.ChatAgent) error {
 
 // registerEditFileTool adds file editing capability via string replacement
 func registerEditFileTool(agent *agents.ChatAgent) error {
-	tool := anthropic.Tool{
+	tool := types.Tool{
 		Name: "edit_file",
 		Description: `Edit a text file by replacing old text with new text.
 
