@@ -84,3 +84,7 @@ The chat agent handles the entire Anthropic tool workflow automatically:
 3. Executes the tool handlers
 4. Sends results back to Claude
 5. Returns Claude's final response
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

@@ -476,3 +476,7 @@ func (lt *LoggingTask) Execute(ctx context.Context, state map[string]interface{}
 ## License
 
 This package is part of the llmkit project and follows the same license terms.
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

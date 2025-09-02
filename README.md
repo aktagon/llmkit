@@ -327,3 +327,7 @@ Commercial support is available. Contact christian@aktagon.com.
 ## License
 
 MIT
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

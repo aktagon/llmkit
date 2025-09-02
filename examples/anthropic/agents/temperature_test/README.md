@@ -29,3 +29,7 @@ go run main.go
 - MaxTokens controls response length (hard cutoff)
 - Options work together seamlessly
 - Pointer usage allows distinguishing "not set" vs "set to zero"
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

@@ -46,3 +46,7 @@ OpenAI provides different token usage fields:
 - MaxTokens controls response length (hard cutoff)
 - Options work together seamlessly
 - API is consistent between OpenAI and Anthropic providers
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

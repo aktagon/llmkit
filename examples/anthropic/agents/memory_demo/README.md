@@ -76,3 +76,7 @@ agent, _ := agents.New(apiKey,
 - **Persistent**: Memory survives restarts
 - **Flexible**: Mix and match features as needed
 - **Backward Compatible**: Existing code works unchanged
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

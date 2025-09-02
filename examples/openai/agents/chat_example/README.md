@@ -198,3 +198,7 @@ if err != nil {
 5. **Full Access**: Both processed text and raw response always available
 6. **Type Safe**: Compile-time checking for all parameters
 7. **Backward Compatible**: Existing code works unchanged
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

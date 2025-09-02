@@ -87,3 +87,6 @@ The agent uses Claude's built-in tool-use capabilities to determine when to read
 - **llmkit Integration**: Uses the llmkit agent framework for simplified development
 
 This example shows how just a few hundred lines of Go code can create a surprisingly capable code-editing assistant.
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

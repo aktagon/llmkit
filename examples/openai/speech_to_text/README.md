@@ -189,3 +189,7 @@ The example audio file `Armstrong_Small_Step.ogg` contains Neil Armstrong's famo
 - Some models support only specific response formats
 - Word-level timestamps may increase processing time
 - Streaming not supported for Whisper-1 model
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+

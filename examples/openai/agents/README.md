@@ -96,3 +96,7 @@ Both agents now have identical structure and behavior:
 | **API Structure**       | Identical        | Identical        |
 
 The only differences are in the underlying API calls and data formats, but the user experience is identical.
+
+---
+Interested in AI-powered workflow automation for your company? Get started: https://aktagon.com | contact@aktagon.com
+
