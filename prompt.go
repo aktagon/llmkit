@@ -22,11 +22,13 @@ const (
 
 // PromptOptions configures the prompt request
 type PromptOptions struct {
-	Provider     Provider       // Which LLM provider to use
-	SystemPrompt string         // System prompt for the request
-	UserPrompt   string         // User prompt for the request
-	JSONSchema   string         // Optional JSON schema for structured output
-	APIKey       string         // API key for the provider
+	Provider     Provider        // Which LLM provider to use
+	SystemPrompt string          // System prompt for the request
+	UserPrompt   string          // User prompt for the request
+	JSONSchema   string          // Optional JSON schema for structured output
+	APIKey       string          // API key for the provider
+	MaxTokens    int             // Maximum tokens in response (0 = omit from request)
+	Temperature  float64         // Sampling temperature (0 = omit from request)
 	Files        []internal.File // Optional file attachments
 }
 
@@ -56,7 +58,11 @@ func Prompt(opts PromptOptions) (string, error) {
 		}
 	}
 
-	return provider.Prompt(ctx, opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey, opts.Files...)
+	settings := internal.Settings{
+		MaxTokens:   opts.MaxTokens,
+		Temperature: opts.Temperature,
+	}
+	return provider.Prompt(ctx, opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey, settings, opts.Files...)
 }
 
 // PromptOpenAI is a convenience function for OpenAI prompts

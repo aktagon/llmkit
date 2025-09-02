@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/aktagon/llmkit/anthropic"
+	"github.com/aktagon/llmkit/anthropic/types"
 	"github.com/aktagon/llmkit/workflow"
 )
 
@@ -127,7 +128,7 @@ func callAnthropic(endpoint, apiKey string, requestBody string) (string, error) 
 	}
 
 	req.Header.Set("x-api-key", apiKey)
-	req.Header.Set("anthropic-version", anthropic.AnthropicVersion)
+	req.Header.Set("anthropic-version", types.AnthropicVersion)
 	req.Header.Set("content-type", "application/json")
 
 	resp, err := client.Do(req)
@@ -176,7 +177,7 @@ Make the script engaging and professionally formatted.`, description)
 
 	// Build request manually to add max_tokens
 	requestBody := map[string]interface{}{
-		"model":      anthropic.Model,
+		"model":      types.Model,
 		"max_tokens": 1000, // Limit script length
 		"system":     systemPrompt,
 		"messages": []map[string]string{
@@ -189,13 +190,13 @@ Make the script engaging and professionally formatted.`, description)
 		return "", &TaskError{"WriteScriptTask", fmt.Errorf("failed to marshal request: %w", err)}
 	}
 
-	response, err := callAnthropic(anthropic.Endpoint, t.APIKey, string(jsonData))
+	response, err := callAnthropic(types.Endpoint, t.APIKey, string(jsonData))
 	if err != nil {
 		return "", &TaskError{"WriteScriptTask", fmt.Errorf("failed to generate script: %w", err)}
 	}
 
 	// Parse the response to extract the script content
-	var anthropicResp anthropic.AnthropicResponse
+	var anthropicResp types.AnthropicResponse
 	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
 		return "", &TaskError{"WriteScriptTask", fmt.Errorf("failed to parse API response: %w", err)}
 	}
@@ -281,7 +282,7 @@ Respond with only this JSON structure:
 	}
 
 	// Parse the response to extract the score
-	var anthropicResp anthropic.AnthropicResponse
+	var anthropicResp types.AnthropicResponse
 	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
 		return "", &TaskError{"ScoreScriptTask", fmt.Errorf("failed to parse API response: %w", err)}
 	}
@@ -357,7 +358,7 @@ Please provide:
 	}
 
 	// Parse the response
-	var anthropicResp anthropic.AnthropicResponse
+	var anthropicResp types.AnthropicResponse
 	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
 		return "", &TaskError{"JudgeScriptTask", fmt.Errorf("failed to parse API response: %w", err)}
 	}
@@ -429,7 +430,7 @@ Please provide a significantly improved version that addresses all the issues me
 
 	// Build request manually to add max_tokens
 	requestBody := map[string]interface{}{
-		"model":      anthropic.Model,
+		"model":      types.Model,
 		"max_tokens": 1000, // Limit rewritten script length
 		"system":     systemPrompt,
 		"messages": []map[string]string{
@@ -442,13 +443,13 @@ Please provide a significantly improved version that addresses all the issues me
 		return "", &TaskError{"RewriteScriptTask", fmt.Errorf("failed to marshal request: %w", err)}
 	}
 
-	response, err := callAnthropic(anthropic.Endpoint, t.APIKey, string(jsonData))
+	response, err := callAnthropic(types.Endpoint, t.APIKey, string(jsonData))
 	if err != nil {
 		return "", &TaskError{"RewriteScriptTask", fmt.Errorf("failed to rewrite script: %w", err)}
 	}
 
 	// Parse the response
-	var anthropicResp anthropic.AnthropicResponse
+	var anthropicResp types.AnthropicResponse
 	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
 		return "", &TaskError{"RewriteScriptTask", fmt.Errorf("failed to parse API response: %w", err)}
 	}

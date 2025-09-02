@@ -16,10 +16,13 @@ const (
 
 	// FilesBetaHeader is the beta header value for files API
 	FilesBetaHeader = "files-api-2025-04-14"
-
-	// MaxTokens is the default maximum tokens for responses
-	MaxTokens = 4096
 )
+
+// RequestSettings contains configuration for API requests
+type RequestSettings struct {
+	MaxTokens   int
+	Temperature float64
+}
 
 // JsonSchema represents the JSON schema structure for structured output
 type JsonSchema struct {
@@ -51,7 +54,7 @@ type ToolCall struct {
 type Content struct {
 	Type      string                 `json:"type"`
 	Text      string                 `json:"text,omitempty"`
-	Source    *FileSource           `json:"source,omitempty"`
+	Source    *FileSource            `json:"source,omitempty"`
 	ID        string                 `json:"id,omitempty"`
 	Name      string                 `json:"name,omitempty"`
 	Input     map[string]interface{} `json:"input,omitempty"`

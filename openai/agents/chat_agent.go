@@ -31,12 +31,12 @@ type ChatOptions struct {
 	Schema       string  // JSON schema for structured output
 	SystemPrompt string  // System prompt for this specific message
 	Temperature  float64 // Temperature for response randomness (0.0-1.0, -1 = use default)
-	MaxTokens    int     // Maximum tokens in response (0 = use default)
+	MaxTokens    int     // Maximum tokens in response (0 = omit from request)
 }
 
 // ChatResponse contains both extracted text and full raw response
 type ChatResponse struct {
-	Text string         // Extracted text response
+	Text string          // Extracted text response
 	Raw  *types.Response // Full API response
 }
 
@@ -45,7 +45,7 @@ type ChatAgent struct {
 	client     *http.Client
 	apiKey     string
 	model      string
-	messages   []types.Message  // Conversation memory
+	messages   []types.Message   // Conversation memory
 	memory     map[string]string // Persistent key-value memory
 	tools      map[string]types.Tool
 	memoryMode MemoryMode // Controls memory behavior

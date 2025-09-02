@@ -1,4 +1,4 @@
-.PHONY: all build clean test fmt vet
+.PHONY: all build clean test fmt vet compile-examples
 
 # Default target
 all: build
@@ -44,3 +44,12 @@ install:
 	go install ./cmd/llmkit-openai
 	go install ./cmd/llmkit-anthropic
 	go install ./cmd/llmkit-google
+
+# Compile all examples
+compile-examples:
+	@echo "Compiling examples..."
+	@for dir in $$(find examples -name Makefile -exec dirname {} \;); do \
+		echo "Compiling $$dir..."; \
+		cd $$dir && make compile && cd - > /dev/null || exit 1; \
+	done
+	@echo "All examples compiled successfully"

@@ -12,6 +12,14 @@ const (
 	Model = "gemini-2.5-flash"
 )
 
+// RequestSettings contains configuration for API requests
+type RequestSettings struct {
+	MaxTokens        int         `json:"maxOutputTokens,omitempty"`
+	Temperature      float64     `json:"temperature,omitempty"`
+	ResponseMimeType string      `json:"responseMimeType,omitempty"`
+	ResponseSchema   interface{} `json:"responseSchema,omitempty"`
+}
+
 // Content represents a content part in the request
 type Content struct {
 	Parts []Part `json:"parts"`
@@ -23,16 +31,10 @@ type Part struct {
 	FileData *FileData `json:"file_data,omitempty"`
 }
 
-// GenerationConfig configures the generation parameters
-type GenerationConfig struct {
-	ResponseMimeType string      `json:"responseMimeType,omitempty"`
-	ResponseSchema   interface{} `json:"responseSchema,omitempty"`
-}
-
 // GoogleRequest represents the request body for Google's API
 type GoogleRequest struct {
-	Contents         []Content         `json:"contents"`
-	GenerationConfig *GenerationConfig `json:"generationConfig,omitempty"`
+	Contents         []Content        `json:"contents"`
+	GenerationConfig *RequestSettings `json:"generationConfig,omitempty"`
 }
 
 // Candidate represents a response candidate

@@ -20,9 +20,9 @@ func buildPrompt(systemPrompt, userPrompt string) string {
 }
 
 // buildRequest creates the JSON request body for Google's API with optional files
-func buildRequest(systemPrompt, userPrompt, jsonSchema string, files ...File) ([]byte, error) {
+func buildRequest(systemPrompt, userPrompt, jsonSchema string, settings RequestSettings, files ...File) ([]byte, error) {
 	combinedPrompt := buildPrompt(systemPrompt, userPrompt)
-	
+
 	parts := []Part{
 		{Text: combinedPrompt},
 	}
@@ -45,7 +45,12 @@ func buildRequest(systemPrompt, userPrompt, jsonSchema string, files ...File) ([
 		},
 	}
 
-	// Add structured output configuration if schema provided
+	// Add generation configuration
+	requestSettings := &RequestSettings{
+		MaxTokens:   settings.MaxTokens,
+		Temperature: settings.Temperature,
+	}
+
 	if jsonSchema != "" && jsonSchema != "null" {
 		var schema interface{}
 		if err := json.Unmarshal([]byte(jsonSchema), &schema); err != nil {
@@ -54,12 +59,11 @@ func buildRequest(systemPrompt, userPrompt, jsonSchema string, files ...File) ([
 				Message: "invalid JSON: " + err.Error(),
 			}
 		}
-
-		request.GenerationConfig = &GenerationConfig{
-			ResponseMimeType: "application/json",
-			ResponseSchema:   schema,
-		}
+		requestSettings.ResponseMimeType = "application/json"
+		requestSettings.ResponseSchema = schema
 	}
+
+	request.GenerationConfig = requestSettings
 
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -75,7 +79,7 @@ func buildRequest(systemPrompt, userPrompt, jsonSchema string, files ...File) ([
 // call makes the HTTP request to Google's API
 func call(apiKey string, requestBody []byte) (string, error) {
 	client := httpclient.NewClient()
-	
+
 	url := fmt.Sprintf("%s?key=%s", Endpoint, apiKey)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(requestBody))
 	if err != nil {
@@ -118,6 +122,11 @@ func call(apiKey string, requestBody []byte) (string, error) {
 
 // Prompt sends a prompt request to Google's Generative AI API
 func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) (string, error) {
+	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, RequestSettings{}, files...)
+}
+
+// PromptWithSettings sends a prompt request with custom settings
+func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings RequestSettings, files ...File) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -125,7 +134,7 @@ func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) 
 		}
 	}
 
-	requestBody, err := buildRequest(systemPrompt, userPrompt, jsonSchema, files...)
+	requestBody, err := buildRequest(systemPrompt, userPrompt, jsonSchema, settings, files...)
 	if err != nil {
 		return "", fmt.Errorf("building request body: %w", err)
 	}

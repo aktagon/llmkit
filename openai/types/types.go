@@ -36,6 +36,12 @@ const (
 	ModelGPT4OMiniTranscribe = "gpt-4o-mini-transcribe"
 )
 
+// RequestSettings contains configuration for API requests
+type RequestSettings struct {
+	MaxTokens   int     `json:"max_tokens,omitempty"`
+	Temperature float64 `json:"temperature,omitempty"`
+}
+
 // ToolHandler executes tool logic and returns results
 type ToolHandler func(input map[string]interface{}) (string, error)
 
@@ -125,15 +131,19 @@ type TextFormat struct {
 
 // ChatRequest represents a standard chat completion request
 type ChatRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	MaxTokens   int       `json:"max_tokens,omitempty"`
+	Temperature float64   `json:"temperature,omitempty"`
 }
 
 // StructuredRequest represents a structured output request
 type StructuredRequest struct {
-	Model string     `json:"model"`
-	Input []Message  `json:"input"`
-	Text  TextFormat `json:"text"`
+	Model       string     `json:"model"`
+	Input       []Message  `json:"input"`
+	Text        TextFormat `json:"text"`
+	MaxTokens   int        `json:"max_tokens,omitempty"`
+	Temperature float64    `json:"temperature,omitempty"`
 }
 
 // ToolsRequest represents a request using the newer tools API

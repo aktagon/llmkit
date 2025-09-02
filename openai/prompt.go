@@ -70,7 +70,7 @@ func buildMessageContent(text string, files ...types.FileUploadResponse) interfa
 }
 
 // buildStructuredRequest creates a structured output request with optional file attachments
-func buildStructuredRequest(systemPrompt, userPrompt string, schema types.SchemaValidation, files ...types.FileUploadResponse) ([]byte, error) {
+func buildStructuredRequest(systemPrompt, userPrompt string, schema types.SchemaValidation, settings types.RequestSettings, files ...types.FileUploadResponse) ([]byte, error) {
 	request := types.StructuredRequest{
 		Model: types.Model,
 		Input: []types.Message{
@@ -85,6 +85,8 @@ func buildStructuredRequest(systemPrompt, userPrompt string, schema types.Schema
 				Strict: schema.Strict,
 			},
 		},
+		MaxTokens:   settings.MaxTokens,
+		Temperature: settings.Temperature,
 	}
 
 	data, err := json.Marshal(request)
@@ -99,13 +101,15 @@ func buildStructuredRequest(systemPrompt, userPrompt string, schema types.Schema
 }
 
 // buildRequest creates a standard chat completion request with optional file attachments
-func buildRequest(systemPrompt, userPrompt string, files ...types.FileUploadResponse) ([]byte, error) {
+func buildRequest(systemPrompt, userPrompt string, settings types.RequestSettings, files ...types.FileUploadResponse) ([]byte, error) {
 	request := types.ChatRequest{
 		Model: types.Model,
 		Messages: []types.Message{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: buildMessageContent(userPrompt, files...)},
 		},
+		MaxTokens:   settings.MaxTokens,
+		Temperature: settings.Temperature,
 	}
 
 	data, err := json.Marshal(request)
@@ -165,6 +169,11 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 
 // Prompt sends a prompt request to OpenAI API with optional file attachments
 func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.FileUploadResponse) (string, error) {
+	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{}, files...)
+}
+
+// PromptWithSettings sends a prompt request with custom settings
+func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings types.RequestSettings, files ...types.FileUploadResponse) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -182,11 +191,11 @@ func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.
 		if err != nil {
 			return "", err
 		}
-		requestBody, err = buildStructuredRequest(systemPrompt, userPrompt, schema, files...)
+		requestBody, err = buildStructuredRequest(systemPrompt, userPrompt, schema, settings, files...)
 		endpoint = types.EndpointResponses
 	} else {
 		// Use standard chat completion
-		requestBody, err = buildRequest(systemPrompt, userPrompt, files...)
+		requestBody, err = buildRequest(systemPrompt, userPrompt, settings, files...)
 		endpoint = types.EndpointCompletions
 	}
 

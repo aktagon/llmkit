@@ -179,6 +179,10 @@ Segments with timestamps:
 5. **Formats**: Use SRT/VTT for subtitle applications
 6. **Temperature**: Use 0.0-0.2 for consistent results, higher for more variation
 
+## Attribution
+
+The example audio file `Armstrong_Small_Step.ogg` contains Neil Armstrong's famous words from the Apollo 11 moon landing. Audio sourced from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Armstrong_Small_Step.ogg).
+
 ## Limitations
 
 - File size limits apply (check OpenAI documentation)

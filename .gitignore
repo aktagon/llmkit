@@ -1,4 +1,7 @@
 bin/
+*.log
+*.wav
+*.mp3
 
 # Go build cache
 *.exe

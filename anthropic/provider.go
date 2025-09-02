@@ -17,7 +17,7 @@ func NewProvider() *Provider {
 }
 
 // Prompt implements the internal.Provider interface
-func (p *Provider) Prompt(ctx context.Context, systemPrompt, userPrompt, jsonSchema, apiKey string, files ...internal.File) (string, error) {
+func (p *Provider) Prompt(ctx context.Context, systemPrompt, userPrompt, jsonSchema, apiKey string, settings internal.Settings, files ...internal.File) (string, error) {
 	// Convert internal.File to types.File
 	anthropicFiles := make([]types.File, len(files))
 	for i, f := range files {
@@ -26,7 +26,11 @@ func (p *Provider) Prompt(ctx context.Context, systemPrompt, userPrompt, jsonSch
 		}
 	}
 
-	return Prompt(systemPrompt, userPrompt, jsonSchema, apiKey, anthropicFiles...)
+	requestSettings := types.RequestSettings{
+		MaxTokens:   settings.MaxTokens,
+		Temperature: settings.Temperature,
+	}
+	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, requestSettings, anthropicFiles...)
 }
 
 // Agent implements the internal.Provider interface

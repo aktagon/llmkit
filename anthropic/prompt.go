@@ -67,7 +67,7 @@ func buildPrompt(userPrompt, jsonSchema string) (string, error) {
 }
 
 // buildRequest creates the JSON request body for the Anthropic API
-func buildRequest(systemPrompt, userPrompt string, files []types.File) (string, error) {
+func buildRequest(systemPrompt, userPrompt string, settings types.RequestSettings, files []types.File) (string, error) {
 	var content interface{}
 
 	if len(files) == 0 {
@@ -88,13 +88,20 @@ func buildRequest(systemPrompt, userPrompt string, files []types.File) (string, 
 	}
 
 	requestBody := map[string]interface{}{
-		"model":      types.Model,
-		"max_tokens": types.MaxTokens,
-		"messages":   messages,
+		"model":    types.Model,
+		"messages": messages,
 	}
 
 	if systemPrompt != "" {
 		requestBody["system"] = systemPrompt
+	}
+
+	if settings.MaxTokens > 0 {
+		requestBody["max_tokens"] = settings.MaxTokens
+	}
+
+	if settings.Temperature > 0 {
+		requestBody["temperature"] = settings.Temperature
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -156,6 +163,11 @@ func call(endpoint, apiKey string, requestBody string) (string, error) {
 
 // Prompt sends a prompt request to Anthropic API with optional file attachments
 func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.File) (string, error) {
+	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{}, files...)
+}
+
+// PromptWithSettings sends a prompt request with custom settings
+func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings types.RequestSettings, files ...types.File) (string, error) {
 	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
@@ -170,7 +182,7 @@ func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.
 	}
 
 	// Build the request body
-	requestBody, err := buildRequest(systemPrompt, finalUserPrompt, files)
+	requestBody, err := buildRequest(systemPrompt, finalUserPrompt, settings, files)
 	if err != nil {
 		return "", fmt.Errorf("building request body: %w", err)
 	}
