@@ -312,9 +312,11 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.AnthropicResponse
 		"messages": messages,
 	}
 
-	// Add max_tokens if provided in options
+	// Add max_tokens (required for Anthropic)
 	if options != nil && options.MaxTokens > 0 {
 		requestBody["max_tokens"] = options.MaxTokens
+	} else {
+		requestBody["max_tokens"] = 1000 // Default max_tokens
 	}
 
 	// Add temperature if provided (use -1 as sentinel for "not set")

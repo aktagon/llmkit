@@ -22,6 +22,8 @@ const (
 type RequestSettings struct {
 	MaxTokens   int
 	Temperature float64
+	TopK        int     // Only sample from the top K options for each subsequent token
+	TopP        float64 // Use nucleus sampling
 }
 
 // JsonSchema represents the JSON schema structure for structured output

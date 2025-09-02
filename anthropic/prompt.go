@@ -96,12 +96,18 @@ func buildRequest(systemPrompt, userPrompt string, settings types.RequestSetting
 		requestBody["system"] = systemPrompt
 	}
 
-	if settings.MaxTokens > 0 {
-		requestBody["max_tokens"] = settings.MaxTokens
-	}
+	requestBody["max_tokens"] = settings.MaxTokens
 
 	if settings.Temperature > 0 {
 		requestBody["temperature"] = settings.Temperature
+	}
+
+	if settings.TopK > 0 {
+		requestBody["top_k"] = settings.TopK
+	}
+
+	if settings.TopP > 0 {
+		requestBody["top_p"] = settings.TopP
 	}
 
 	jsonData, err := json.Marshal(requestBody)
