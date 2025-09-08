@@ -2,9 +2,9 @@ class Llmkit < Formula
   desc "Command-line toolkit for working with Large Language Models"
   homepage "https://github.com/aktagon/llmkit"
   # NOTE: The url, version, and sha256 are updated by the github action (.github/workflows/release.yml) automatically
-  url "https://github.com/aktagon/llmkit/archive/refs/tags/v0.2.8.tar.gz"
-  version "v0.2.8"
-  sha256 "3af51276a8e40fe86e9af745074ad96cb3efae995dc7a75ae3b836af546b3c0b"
+  url "https://github.com/aktagon/llmkit/archive/refs/tags/v0.2.9.tar.gz"
+  version "v0.2.9"
+  sha256 "3389cae56a10f2117bc2c99a9ee5106aff509b94fc2cb020e3abf48e16259a9f"
   license "MIT"
 
   depends_on "go" => :build
