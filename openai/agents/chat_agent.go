@@ -28,10 +28,11 @@ type AgentOption func(*ChatAgent) error
 
 // ChatOptions provides optional parameters for chat requests
 type ChatOptions struct {
-	Schema       string  // JSON schema for structured output
-	SystemPrompt string  // System prompt for this specific message
-	Temperature  float64 // Temperature for response randomness (0.0-1.0, -1 = use default)
-	MaxTokens    int     // Maximum tokens in response (0 = omit from request)
+	Schema       string                     // JSON schema for structured output
+	SystemPrompt string                     // System prompt for this specific message
+	Temperature  float64                    // Temperature for response randomness (0.0-1.0, -1 = use default)
+	MaxTokens    int                        // Maximum tokens in response (0 = omit from request)
+	Files        []types.FileUploadResponse // File attachments to include in the message
 }
 
 // ChatResponse contains both extracted text and full raw response
@@ -240,10 +241,23 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 		}
 	}
 
+	// Build user message content with text and optional files
+	var content interface{} = message
+	if options != nil && len(options.Files) > 0 {
+		parts := []types.ContentPart{{Type: "text", Text: message}}
+		for _, file := range options.Files {
+			parts = append(parts, types.ContentPart{
+				Type: "file",
+				File: &types.FileReference{FileID: file.ID},
+			})
+		}
+		content = parts
+	}
+
 	// Add user message to conversation history
 	userMessage := types.Message{
 		Role:    "user",
-		Content: message,
+		Content: content,
 	}
 	ca.messages = append(ca.messages, userMessage)
 

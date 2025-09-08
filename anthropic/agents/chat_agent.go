@@ -28,10 +28,11 @@ type AgentOption func(*ChatAgent) error
 
 // ChatOptions provides optional parameters for chat requests
 type ChatOptions struct {
-	Schema       string  // JSON schema for structured output
-	SystemPrompt string  // System prompt for this specific message
-	Temperature  float64 // Temperature for response randomness (0.0-1.0, -1 = use default)
-	MaxTokens    int     // Maximum tokens in response (0 = omit from request)
+	Schema       string       // JSON schema for structured output
+	SystemPrompt string       // System prompt for this specific message
+	Temperature  float64      // Temperature for response randomness (0.0-1.0, -1 = use default)
+	MaxTokens    int          // Maximum tokens in response (0 = omit from request)
+	Files        []types.File // File attachments to include in the message
 }
 
 // ChatResponse contains both extracted text and full raw response
@@ -242,13 +243,26 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 
 	// Note: System prompts are handled in sendRequest for Anthropic API
 
+	// Build user message content with text and optional files
+	content := []types.Content{{
+		Type: "text",
+		Text: message,
+	}}
+
+	// Add file attachments if provided
+	if options != nil && len(options.Files) > 0 {
+		for _, file := range options.Files {
+			content = append(content, types.Content{
+				Type:   "document",
+				Source: &types.FileSource{Type: "file", FileID: file.ID},
+			})
+		}
+	}
+
 	// Add user message to conversation history
 	userMessage := types.Message{
-		Role: "user",
-		Content: []types.Content{{
-			Type: "text",
-			Text: message,
-		}},
+		Role:    "user",
+		Content: content,
 	}
 	ca.messages = append(ca.messages, userMessage)
 
@@ -363,6 +377,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.AnthropicResponse
 
 	req.Header.Set("x-api-key", ca.apiKey)
 	req.Header.Set("anthropic-version", types.AnthropicVersion)
+	req.Header.Set("anthropic-beta", types.FilesBetaHeader)
 	req.Header.Set("content-type", "application/json")
 
 	resp, err := ca.client.Do(req)
