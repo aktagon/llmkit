@@ -32,5 +32,7 @@ func main() {
 		log.Fatalf("Failed to analyze document: %v", err)
 	}
 
-	fmt.Println(response)
+	if len(response.Content) > 0 {
+		fmt.Println(response.Content[0].Text)
+	}
 }

@@ -31,5 +31,7 @@ func main() {
 		log.Fatalf("Error calling Anthropic API: %v", err)
 	}
 
-	fmt.Print(response)
+	if len(response.Content) > 0 {
+		fmt.Print(response.Content[0].Text)
+	}
 }

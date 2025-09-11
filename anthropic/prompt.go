@@ -168,14 +168,14 @@ func call(endpoint, apiKey string, requestBody string) (string, error) {
 }
 
 // Prompt sends a prompt request to Anthropic API with optional file attachments
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.File) (string, error) {
-	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{}, files...)
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.File) (*types.AnthropicResponse, error) {
+	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{MaxTokens: 4096}, files...)
 }
 
 // PromptWithSettings sends a prompt request with custom settings
-func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings types.RequestSettings, files ...types.File) (string, error) {
+func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings types.RequestSettings, files ...types.File) (*types.AnthropicResponse, error) {
 	if apiKey == "" {
-		return "", &errors.ValidationError{
+		return nil, &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}
@@ -184,20 +184,26 @@ func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, set
 	// Build the complete user prompt with optional schema
 	finalUserPrompt, err := buildPrompt(userPrompt, jsonSchema)
 	if err != nil {
-		return "", fmt.Errorf("building user prompt: %w", err)
+		return nil, fmt.Errorf("building user prompt: %w", err)
 	}
 
 	// Build the request body
 	requestBody, err := buildRequest(systemPrompt, finalUserPrompt, settings, files)
 	if err != nil {
-		return "", fmt.Errorf("building request body: %w", err)
+		return nil, fmt.Errorf("building request body: %w", err)
 	}
 
 	// Make the API call
 	response, err := call(types.Endpoint, apiKey, requestBody)
 	if err != nil {
-		return "", fmt.Errorf("calling Anthropic API: %w", err)
+		return nil, fmt.Errorf("calling Anthropic API: %w", err)
 	}
 
-	return response, nil
+	// Parse the response to extract the structured content
+	var anthropicResp types.AnthropicResponse
+	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
+		return nil, fmt.Errorf("failed to parse API response: %w", err)
+	}
+
+	return &anthropicResp, nil
 }

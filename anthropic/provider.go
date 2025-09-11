@@ -53,7 +53,16 @@ func (p *Provider) Prompt(ctx context.Context, systemPrompt, userPrompt, jsonSch
 		TopK:        settings.TopK,
 		TopP:        settings.TopP,
 	}
-	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, requestSettings, anthropicFiles...)
+	response, err := PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, requestSettings, anthropicFiles...)
+	if err != nil {
+		return "", err
+	}
+
+	if len(response.Content) == 0 {
+		return "", errors.New("no content in API response")
+	}
+
+	return response.Content[0].Text, nil
 }
 
 // Agent implements the internal.Provider interface

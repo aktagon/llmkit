@@ -195,17 +195,11 @@ Make the script engaging and professionally formatted.`, description)
 		return "", &TaskError{"WriteScriptTask", fmt.Errorf("failed to generate script: %w", err)}
 	}
 
-	// Parse the response to extract the script content
-	var anthropicResp types.AnthropicResponse
-	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
-		return "", &TaskError{"WriteScriptTask", fmt.Errorf("failed to parse API response: %w", err)}
-	}
-
-	if len(anthropicResp.Content) == 0 {
+	if len(response.Content) == 0 {
 		return "", &TaskError{"WriteScriptTask", fmt.Errorf("no content in API response")}
 	}
 
-	scriptContent := anthropicResp.Content[0].Text
+	scriptContent := response.Content[0].Text
 
 	// Store the script in state
 	state["script_content"] = scriptContent
@@ -281,18 +275,12 @@ Respond with only this JSON structure:
 		return "", &TaskError{"ScoreScriptTask", fmt.Errorf("failed to score script: %w", err)}
 	}
 
-	// Parse the response to extract the score
-	var anthropicResp types.AnthropicResponse
-	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
-		return "", &TaskError{"ScoreScriptTask", fmt.Errorf("failed to parse API response: %w", err)}
-	}
-
-	if len(anthropicResp.Content) == 0 {
+	if len(response.Content) == 0 {
 		return "", &TaskError{"ScoreScriptTask", fmt.Errorf("no content in API response")}
 	}
 
 	// Extract and clean JSON content
-	jsonContent := extractJSON(anthropicResp.Content[0].Text)
+	jsonContent := extractJSON(response.Content[0].Text)
 
 	// Parse the structured JSON response
 	var scoreResult struct {
@@ -357,17 +345,11 @@ Please provide:
 		return "", &TaskError{"JudgeScriptTask", fmt.Errorf("failed to judge script: %w", err)}
 	}
 
-	// Parse the response
-	var anthropicResp types.AnthropicResponse
-	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
-		return "", &TaskError{"JudgeScriptTask", fmt.Errorf("failed to parse API response: %w", err)}
-	}
-
-	if len(anthropicResp.Content) == 0 {
+	if len(response.Content) == 0 {
 		return "", &TaskError{"JudgeScriptTask", fmt.Errorf("no content in API response")}
 	}
 
-	judgment := anthropicResp.Content[0].Text
+	judgment := response.Content[0].Text
 	state["judgment"] = judgment
 
 	spinner.Stop()
@@ -448,17 +430,11 @@ Please provide a significantly improved version that addresses all the issues me
 		return "", &TaskError{"RewriteScriptTask", fmt.Errorf("failed to rewrite script: %w", err)}
 	}
 
-	// Parse the response
-	var anthropicResp types.AnthropicResponse
-	if err := json.Unmarshal([]byte(response), &anthropicResp); err != nil {
-		return "", &TaskError{"RewriteScriptTask", fmt.Errorf("failed to parse API response: %w", err)}
-	}
-
-	if len(anthropicResp.Content) == 0 {
+	if len(response.Content) == 0 {
 		return "", &TaskError{"RewriteScriptTask", fmt.Errorf("no content in API response")}
 	}
 
-	rewrittenScript := anthropicResp.Content[0].Text
+	rewrittenScript := response.Content[0].Text
 
 	// Update state with rewritten script
 	state["script_content"] = rewrittenScript
