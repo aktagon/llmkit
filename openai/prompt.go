@@ -124,12 +124,12 @@ func buildRequest(systemPrompt, userPrompt string, settings types.RequestSetting
 }
 
 // call sends the HTTP request to OpenAI API
-func call(endpoint, apiKey string, requestBody []byte) (string, error) {
+func call(endpoint, apiKey string, requestBody []byte) (*types.Response, error) {
 	client := httpclient.NewClient()
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(requestBody))
 	if err != nil {
-		return "", &errors.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "creating request",
 			Err:       err,
 		}
@@ -140,7 +140,7 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", &errors.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "sending request",
 			Err:       err,
 		}
@@ -149,14 +149,14 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", &errors.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "reading response",
 			Err:       err,
 		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", &errors.APIError{
+		return nil, &errors.APIError{
 			Provider:   "OpenAI",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
@@ -164,18 +164,26 @@ func call(endpoint, apiKey string, requestBody []byte) (string, error) {
 		}
 	}
 
-	return string(bodyText), nil
+	var response types.Response
+	if err := json.Unmarshal(bodyText, &response); err != nil {
+		return nil, &errors.RequestError{
+			Operation: "parsing response",
+			Err:       err,
+		}
+	}
+
+	return &response, nil
 }
 
 // Prompt sends a prompt request to OpenAI API with optional file attachments
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.FileUploadResponse) (string, error) {
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.FileUploadResponse) (*types.Response, error) {
 	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{}, files...)
 }
 
 // PromptWithSettings sends a prompt request with custom settings
-func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings types.RequestSettings, files ...types.FileUploadResponse) (string, error) {
+func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings types.RequestSettings, files ...types.FileUploadResponse) (*types.Response, error) {
 	if apiKey == "" {
-		return "", &errors.ValidationError{
+		return nil, &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}
@@ -189,7 +197,7 @@ func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, set
 		// Validate and use structured output
 		schema, err := validateSchema(jsonSchema)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		requestBody, err = buildStructuredRequest(systemPrompt, userPrompt, schema, settings, files...)
 		endpoint = types.EndpointResponses
@@ -200,12 +208,12 @@ func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, set
 	}
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	response, err := call(endpoint, apiKey, requestBody)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	return response, nil

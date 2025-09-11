@@ -1,0 +1,21 @@
+{
+  "id": "msg_01HBaL5HzgxEZBYDZjfD3LbX",
+  "type": "message",
+  "model": "claude-sonnet-4-20250514",
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "2 + 2 = 4"
+    }
+  ],
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "output_tokens": 13,
+    "service_tier": "standard"
+  }
+}

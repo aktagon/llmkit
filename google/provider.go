@@ -3,7 +3,7 @@ package google
 import (
 	"context"
 
-	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/google/agents"
 	"github.com/aktagon/llmkit/internal"
 )
 
@@ -30,13 +30,19 @@ func (p *Provider) Prompt(ctx context.Context, systemPrompt, userPrompt, jsonSch
 		MaxTokens:   settings.MaxTokens,
 		Temperature: settings.Temperature,
 	}
-	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, requestSettings, googleFiles...)
+	response, err := PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, requestSettings, googleFiles...)
+	if err != nil {
+		return "", err
+	}
+
+	if len(response.Candidates) == 0 || len(response.Candidates[0].Content.Parts) == 0 {
+		return "", nil
+	}
+
+	return response.Candidates[0].Content.Parts[0].Text, nil
 }
 
 // Agent implements the internal.Provider interface
 func (p *Provider) Agent(apiKey string) (interface{}, error) {
-	return nil, &errors.ValidationError{
-		Field:   "provider",
-		Message: "Google agent is not yet implemented",
-	}
+	return agents.New(apiKey)
 }

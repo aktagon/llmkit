@@ -77,13 +77,13 @@ func buildRequest(systemPrompt, userPrompt, jsonSchema string, settings RequestS
 }
 
 // call makes the HTTP request to Google's API
-func call(apiKey string, requestBody []byte) (string, error) {
+func call(apiKey string, requestBody []byte) (*GoogleResponse, error) {
 	client := httpclient.NewClient()
 
 	url := fmt.Sprintf("%s?key=%s", Endpoint, apiKey)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(requestBody))
 	if err != nil {
-		return "", &errors.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "creating request",
 			Err:       err,
 		}
@@ -93,7 +93,7 @@ func call(apiKey string, requestBody []byte) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", &errors.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "sending request",
 			Err:       err,
 		}
@@ -102,14 +102,14 @@ func call(apiKey string, requestBody []byte) (string, error) {
 
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", &errors.RequestError{
+		return nil, &errors.RequestError{
 			Operation: "reading response",
 			Err:       err,
 		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", &errors.APIError{
+		return nil, &errors.APIError{
 			Provider:   "Google",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
@@ -117,18 +117,26 @@ func call(apiKey string, requestBody []byte) (string, error) {
 		}
 	}
 
-	return string(bodyText), nil
+	var response GoogleResponse
+	if err := json.Unmarshal(bodyText, &response); err != nil {
+		return nil, &errors.RequestError{
+			Operation: "parsing response",
+			Err:       err,
+		}
+	}
+
+	return &response, nil
 }
 
 // Prompt sends a prompt request to Google's Generative AI API
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) (string, error) {
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) (*GoogleResponse, error) {
 	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, RequestSettings{}, files...)
 }
 
 // PromptWithSettings sends a prompt request with custom settings
-func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings RequestSettings, files ...File) (string, error) {
+func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings RequestSettings, files ...File) (*GoogleResponse, error) {
 	if apiKey == "" {
-		return "", &errors.ValidationError{
+		return nil, &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}
@@ -136,12 +144,12 @@ func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, set
 
 	requestBody, err := buildRequest(systemPrompt, userPrompt, jsonSchema, settings, files...)
 	if err != nil {
-		return "", fmt.Errorf("building request body: %w", err)
+		return nil, fmt.Errorf("building request body: %w", err)
 	}
 
 	response, err := call(apiKey, requestBody)
 	if err != nil {
-		return "", fmt.Errorf("calling Google API: %w", err)
+		return nil, fmt.Errorf("calling Google API: %w", err)
 	}
 
 	return response, nil

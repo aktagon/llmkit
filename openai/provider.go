@@ -30,7 +30,16 @@ func (p *Provider) Prompt(ctx context.Context, systemPrompt, userPrompt, jsonSch
 		MaxTokens:   settings.MaxTokens,
 		Temperature: settings.Temperature,
 	}
-	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, requestSettings, openaiFiles...)
+	response, err := PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, requestSettings, openaiFiles...)
+	if err != nil {
+		return "", err
+	}
+
+	if len(response.Choices) == 0 {
+		return "", nil
+	}
+
+	return response.Choices[0].Message.Content, nil
 }
 
 // Agent implements the internal.Provider interface
