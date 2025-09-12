@@ -20,7 +20,7 @@ func TestParseAnthropicResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := os.ReadFile(tt.file)
 			if err != nil {
-				t.Skipf("Test fixture %s not available. Run scripts/capture_anthropic_response.go first", tt.file)
+				t.Skipf("Test fixture %s not available. Run: go run cmd/tools/capture_response.go anthropic", tt.file)
 			}
 
 			var response types.AnthropicResponse

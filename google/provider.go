@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aktagon/llmkit/google/agents"
+	"github.com/aktagon/llmkit/google/types"
 	"github.com/aktagon/llmkit/internal"
 )
 
@@ -18,15 +19,15 @@ func NewProvider() *Provider {
 // Prompt implements the internal.Provider interface
 func (p *Provider) Prompt(ctx context.Context, systemPrompt, userPrompt, jsonSchema, apiKey string, settings internal.Settings, files ...internal.File) (string, error) {
 	// Convert internal.File to google.File
-	googleFiles := make([]File, len(files))
+	googleFiles := make([]types.File, len(files))
 	for i, f := range files {
-		googleFiles[i] = File{
+		googleFiles[i] = types.File{
 			URI:      f.URI,
 			MimeType: f.MimeType,
 		}
 	}
 
-	requestSettings := RequestSettings{
+	requestSettings := types.RequestSettings{
 		MaxTokens:   settings.MaxTokens,
 		Temperature: settings.Temperature,
 	}

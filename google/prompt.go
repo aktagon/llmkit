@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/google/types"
 	"github.com/aktagon/llmkit/httpclient"
 )
 
@@ -20,25 +21,25 @@ func buildPrompt(systemPrompt, userPrompt string) string {
 }
 
 // buildRequest creates the JSON request body for Google's API with optional files
-func buildRequest(systemPrompt, userPrompt, jsonSchema string, settings RequestSettings, files ...File) ([]byte, error) {
+func buildRequest(systemPrompt, userPrompt, jsonSchema string, settings types.RequestSettings, files ...types.File) ([]byte, error) {
 	combinedPrompt := buildPrompt(systemPrompt, userPrompt)
 
-	parts := []Part{
+	parts := []types.Part{
 		{Text: combinedPrompt},
 	}
 
 	// Add file parts if provided
 	for _, file := range files {
-		parts = append(parts, Part{
-			FileData: &FileData{
+		parts = append(parts, types.Part{
+			FileData: &types.FileData{
 				MimeType: file.MimeType,
 				FileURI:  file.URI,
 			},
 		})
 	}
 
-	request := GoogleRequest{
-		Contents: []Content{
+	request := types.GoogleRequest{
+		Contents: []types.Content{
 			{
 				Parts: parts,
 			},
@@ -46,7 +47,7 @@ func buildRequest(systemPrompt, userPrompt, jsonSchema string, settings RequestS
 	}
 
 	// Add generation configuration
-	requestSettings := &RequestSettings{
+	requestSettings := &types.RequestSettings{
 		MaxTokens:   settings.MaxTokens,
 		Temperature: settings.Temperature,
 	}
@@ -77,10 +78,10 @@ func buildRequest(systemPrompt, userPrompt, jsonSchema string, settings RequestS
 }
 
 // call makes the HTTP request to Google's API
-func call(apiKey string, requestBody []byte) (*GoogleResponse, error) {
+func call(apiKey string, requestBody []byte) (*types.GoogleResponse, error) {
 	client := httpclient.NewClient()
 
-	url := fmt.Sprintf("%s?key=%s", Endpoint, apiKey)
+	url := fmt.Sprintf("%s?key=%s", types.Endpoint, apiKey)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(requestBody))
 	if err != nil {
 		return nil, &errors.RequestError{
@@ -113,11 +114,11 @@ func call(apiKey string, requestBody []byte) (*GoogleResponse, error) {
 			Provider:   "Google",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
-			Endpoint:   Endpoint,
+			Endpoint:   types.Endpoint,
 		}
 	}
 
-	var response GoogleResponse
+	var response types.GoogleResponse
 	if err := json.Unmarshal(bodyText, &response); err != nil {
 		return nil, &errors.RequestError{
 			Operation: "parsing response",
@@ -129,12 +130,12 @@ func call(apiKey string, requestBody []byte) (*GoogleResponse, error) {
 }
 
 // Prompt sends a prompt request to Google's Generative AI API
-func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...File) (*GoogleResponse, error) {
-	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, RequestSettings{}, files...)
+func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.File) (*types.GoogleResponse, error) {
+	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{}, files...)
 }
 
 // PromptWithSettings sends a prompt request with custom settings
-func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings RequestSettings, files ...File) (*GoogleResponse, error) {
+func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, settings types.RequestSettings, files ...types.File) (*types.GoogleResponse, error) {
 	if apiKey == "" {
 		return nil, &errors.ValidationError{
 			Field:   "apiKey",

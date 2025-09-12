@@ -12,10 +12,11 @@ import (
 	"strconv"
 
 	"github.com/aktagon/llmkit/errors"
+	"github.com/aktagon/llmkit/google/types"
 )
 
 // UploadFile uploads a file to Google and returns file metadata
-func UploadFile(filePath, apiKey string) (*File, error) {
+func UploadFile(filePath, apiKey string) (*types.File, error) {
 	if apiKey == "" {
 		return nil, &errors.ValidationError{
 			Field:   "apiKey",
@@ -67,8 +68,8 @@ func UploadFile(filePath, apiKey string) (*File, error) {
 
 // initiateUpload starts the resumable upload and returns the upload URL
 func initiateUpload(apiKey string, fileSize int64, mimeType, displayName string) (string, error) {
-	uploadRequest := FileUploadRequest{
-		File: FileUploadInfo{
+	uploadRequest := types.FileUploadRequest{
+		File: types.FileUploadInfo{
 			DisplayName: displayName,
 		},
 	}
@@ -81,7 +82,7 @@ func initiateUpload(apiKey string, fileSize int64, mimeType, displayName string)
 		}
 	}
 
-	req, err := http.NewRequest("POST", FilesEndpoint, bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", types.FilesEndpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
 		return "", &errors.RequestError{
 			Operation: "creating upload request",
@@ -112,7 +113,7 @@ func initiateUpload(apiKey string, fileSize int64, mimeType, displayName string)
 			Provider:   "Google",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
-			Endpoint:   FilesEndpoint,
+			Endpoint:   types.FilesEndpoint,
 		}
 	}
 
@@ -129,7 +130,7 @@ func initiateUpload(apiKey string, fileSize int64, mimeType, displayName string)
 }
 
 // uploadFileBytes uploads the actual file content and returns the file metadata
-func uploadFileBytes(uploadURL string, file *os.File, fileSize int64) (*File, error) {
+func uploadFileBytes(uploadURL string, file *os.File, fileSize int64) (*types.File, error) {
 	req, err := http.NewRequest("PUT", uploadURL, file)
 	if err != nil {
 		return nil, &errors.RequestError{
@@ -169,7 +170,7 @@ func uploadFileBytes(uploadURL string, file *os.File, fileSize int64) (*File, er
 		}
 	}
 
-	var uploadResponse FileUploadResponse
+	var uploadResponse types.FileUploadResponse
 	err = json.Unmarshal(bodyText, &uploadResponse)
 	if err != nil {
 		return nil, &errors.RequestError{
