@@ -3,10 +3,12 @@ package llmkit
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/aktagon/llmkit/anthropic"
 	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/google"
+	"github.com/aktagon/llmkit/httpclient"
 	"github.com/aktagon/llmkit/internal"
 	"github.com/aktagon/llmkit/openai"
 )
@@ -32,16 +34,48 @@ type PromptOptions struct {
 	Files        []internal.File // Optional file attachments
 }
 
-// Prompt sends a prompt request to the specified LLM provider
-func Prompt(opts PromptOptions) (string, error) {
-	if opts.APIKey == "" {
+// Client interface enables mocking and testing
+type Client interface {
+	Prompt(ctx context.Context, opts PromptOptions) (string, error)
+}
+
+// client implements the Client interface
+type client struct {
+	apiKey     string
+	httpClient *http.Client
+}
+
+// NewClient creates a new client with default HTTP client
+func NewClient(apiKey string) Client {
+	return &client{
+		apiKey:     apiKey,
+		httpClient: httpclient.NewClient(),
+	}
+}
+
+// NewClientWithHTTPClient creates a new client with custom HTTP client
+func NewClientWithHTTPClient(apiKey string, httpClient *http.Client) Client {
+	return &client{
+		apiKey:     apiKey,
+		httpClient: httpClient,
+	}
+}
+
+// Prompt implements the Client interface
+func (c *client) Prompt(ctx context.Context, opts PromptOptions) (string, error) {
+	// Use client's API key if not provided in options
+	apiKey := opts.APIKey
+	if apiKey == "" {
+		apiKey = c.apiKey
+	}
+
+	if apiKey == "" {
 		return "", &errors.ValidationError{
 			Field:   "apiKey",
 			Message: "API key is required",
 		}
 	}
 
-	ctx := context.Background()
 	var provider internal.Provider
 
 	switch opts.Provider {
@@ -62,7 +96,13 @@ func Prompt(opts PromptOptions) (string, error) {
 		MaxTokens:   opts.MaxTokens,
 		Temperature: opts.Temperature,
 	}
-	return provider.Prompt(ctx, opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, opts.APIKey, settings, opts.Files...)
+	return provider.Prompt(ctx, opts.SystemPrompt, opts.UserPrompt, opts.JSONSchema, apiKey, settings, opts.Files...)
+}
+
+// Prompt sends a prompt request to the specified LLM provider
+func Prompt(opts PromptOptions) (string, error) {
+	client := NewClient(opts.APIKey)
+	return client.Prompt(context.Background(), opts)
 }
 
 // PromptOpenAI is a convenience function for OpenAI prompts

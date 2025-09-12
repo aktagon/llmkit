@@ -257,6 +257,45 @@ func main() {
 }
 ```
 
+## Testing
+
+Mock LLM responses for testing:
+
+```go
+func TestMyFunction(t *testing.T) {
+    mock := llmkit.NewMockClient()
+    mock.PromptFunc = func(ctx context.Context, opts llmkit.PromptOptions) (string, error) {
+        return "mocked response", nil
+    }
+    
+    result, err := myFunction(mock)
+    // ... test assertions
+}
+```
+
+Client interface for dependency injection:
+
+```go
+func myFunction(client llmkit.Client) (string, error) {
+    return client.Prompt(ctx, opts)
+}
+
+// Production
+client := llmkit.NewClient("api-key")
+
+// Testing  
+client := llmkit.NewMockClient()
+```
+
+For conversational agents, use concrete types directly:
+
+```go
+import "github.com/aktagon/llmkit/openai/agents"
+
+agent, err := agents.New("api-key")
+response, err := agent.Chat("Hello")
+```
+
 ## Features
 
 - Standard chat completions
