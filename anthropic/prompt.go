@@ -87,8 +87,13 @@ func buildRequest(systemPrompt, userPrompt string, settings types.RequestSetting
 		{"role": "user", "content": content},
 	}
 
+	model := settings.Model
+	if model == "" {
+		model = types.Model
+	}
+
 	requestBody := map[string]interface{}{
-		"model":    types.Model,
+		"model":    model,
 		"messages": messages,
 	}
 
@@ -169,7 +174,10 @@ func call(endpoint, apiKey string, requestBody string) (string, error) {
 
 // Prompt sends a prompt request to Anthropic API with optional file attachments
 func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.File) (*types.AnthropicResponse, error) {
-	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{MaxTokens: 4096}, files...)
+	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{
+		Model:     types.Model,
+		MaxTokens: 4096,
+	}, files...)
 }
 
 // PromptWithSettings sends a prompt request with custom settings

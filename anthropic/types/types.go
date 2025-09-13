@@ -20,6 +20,7 @@ const (
 
 // RequestSettings contains configuration for API requests
 type RequestSettings struct {
+	Model       string  // Model to use for the request (defaults to types.Model if empty)
 	MaxTokens   int
 	Temperature float64
 	TopK        int     // Only sample from the top K options for each subsequent token

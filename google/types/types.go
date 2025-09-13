@@ -2,8 +2,8 @@ package types
 
 // API Configuration Constants
 const (
-	// Endpoint is the Google Generative AI API endpoint
-	Endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+	// BaseEndpoint is the Google Generative AI API base endpoint
+	BaseEndpoint = "https://generativelanguage.googleapis.com/v1beta/models"
 
 	// FilesEndpoint is the Google Files API endpoint for uploads
 	FilesEndpoint = "https://generativelanguage.googleapis.com/upload/v1beta/files"
@@ -14,6 +14,7 @@ const (
 
 // RequestSettings contains configuration for API requests
 type RequestSettings struct {
+	Model            string      `json:"-"` // Model to use for the request (defaults to types.Model if empty)
 	MaxTokens        int         `json:"maxOutputTokens,omitempty"`
 	Temperature      float64     `json:"temperature,omitempty"`
 	ResponseMimeType string      `json:"responseMimeType,omitempty"`

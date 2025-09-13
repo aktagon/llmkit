@@ -78,10 +78,15 @@ func buildRequest(systemPrompt, userPrompt, jsonSchema string, settings types.Re
 }
 
 // call makes the HTTP request to Google's API
-func call(apiKey string, requestBody []byte) (*types.GoogleResponse, error) {
+func call(apiKey string, requestBody []byte, settings types.RequestSettings) (*types.GoogleResponse, error) {
 	client := httpclient.NewClient()
 
-	url := fmt.Sprintf("%s?key=%s", types.Endpoint, apiKey)
+	model := settings.Model
+	if model == "" {
+		model = types.Model
+	}
+
+	url := fmt.Sprintf("%s/%s:generateContent?key=%s", types.BaseEndpoint, model, apiKey)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(requestBody))
 	if err != nil {
 		return nil, &errors.RequestError{
@@ -131,7 +136,9 @@ func call(apiKey string, requestBody []byte) (*types.GoogleResponse, error) {
 
 // Prompt sends a prompt request to Google's Generative AI API
 func Prompt(systemPrompt, userPrompt, jsonSchema, apiKey string, files ...types.File) (*types.GoogleResponse, error) {
-	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{}, files...)
+	return PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey, types.RequestSettings{
+		Model: types.Model,
+	}, files...)
 }
 
 // PromptWithSettings sends a prompt request with custom settings
@@ -148,7 +155,7 @@ func PromptWithSettings(systemPrompt, userPrompt, jsonSchema, apiKey string, set
 		return nil, fmt.Errorf("building request body: %w", err)
 	}
 
-	response, err := call(apiKey, requestBody)
+	response, err := call(apiKey, requestBody, settings)
 	if err != nil {
 		return nil, fmt.Errorf("calling Google API: %w", err)
 	}

@@ -4,6 +4,7 @@ import "context"
 
 // Settings contains all possible provider-specific settings
 type Settings struct {
+	Model       string  // Model to use for the request (provider-specific default if empty)
 	MaxTokens   int     // Maximum tokens in response (0 = omit from request)
 	Temperature float64 // Sampling temperature (0 = omit from request)
 	TopK        int     // Only sample from the top K options for each subsequent token (0 = omit from request)
