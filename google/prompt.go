@@ -119,7 +119,7 @@ func call(apiKey string, requestBody []byte, settings types.RequestSettings) (*t
 			Provider:   "Google",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
-			Endpoint:   types.Endpoint,
+			Endpoint:   url,
 		}
 	}
 

@@ -31,5 +31,7 @@ func main() {
 		log.Fatalf("Error calling OpenAI API: %v", err)
 	}
 
-	fmt.Print(response)
+	if len(response.Choices) > 0 {
+		fmt.Print(response.Choices[0].Message.Content)
+	}
 }

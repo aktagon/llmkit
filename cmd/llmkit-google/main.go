@@ -31,5 +31,7 @@ func main() {
 		log.Fatalf("Error calling Google API: %v", err)
 	}
 
-	fmt.Print(response)
+	if len(response.Candidates) > 0 && len(response.Candidates[0].Content.Parts) > 0 {
+		fmt.Print(response.Candidates[0].Content.Parts[0].Text)
+	}
 }

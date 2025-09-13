@@ -230,7 +230,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.GoogleResponse, e
 		}
 	}
 
-	endpoint := fmt.Sprintf("%s?key=%s", types.Endpoint, ca.apiKey)
+	endpoint := fmt.Sprintf("%s/%s:generateContent?key=%s", types.BaseEndpoint, ca.model, ca.apiKey)
 	req, err := http.NewRequest("POST", endpoint, strings.NewReader(string(jsonData)))
 	if err != nil {
 		return nil, &errors.RequestError{
@@ -263,7 +263,7 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.GoogleResponse, e
 			Provider:   "Google",
 			StatusCode: resp.StatusCode,
 			Message:    string(bodyText),
-			Endpoint:   types.Endpoint,
+			Endpoint:   endpoint,
 		}
 	}
 
