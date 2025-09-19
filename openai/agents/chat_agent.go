@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/httpclient"
@@ -478,7 +480,16 @@ func (ca *ChatAgent) executeToolCalls(toolCalls []types.FunctionCall) error {
 		}
 
 		// Execute the tool
+		start := time.Now()
 		result, err := tool.Handler(arguments)
+		duration := time.Since(start)
+
+		slog.Debug("Tool execution",
+			slog.String("tool", toolCall.Name),
+			slog.Any("input", arguments),
+			slog.Duration("duration", duration),
+			slog.String("result", result))
+
 		if err != nil {
 			return fmt.Errorf("executing tool '%s': %w", toolCall.Name, err)
 		}

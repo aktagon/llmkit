@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/google/types"
@@ -48,6 +50,7 @@ type ChatAgent struct {
 	model      string
 	messages   []types.Content   // Conversation memory
 	memory     map[string]string // Persistent key-value memory
+	tools      map[string]types.Tool
 	memoryMode MemoryMode        // Controls memory behavior
 	memoryFile string            // Path for memory persistence
 }
@@ -67,6 +70,7 @@ func New(apiKey string, opts ...AgentOption) (*ChatAgent, error) {
 		model:      types.Model,
 		messages:   make([]types.Content, 0),
 		memory:     make(map[string]string),
+		tools:      make(map[string]types.Tool),
 		memoryMode: MemoryDisabled,
 	}
 
@@ -88,6 +92,14 @@ func WithMemoryContext() AgentOption {
 	}
 }
 
+// WithMemoryTools enables memory tools (remember_fact, recall_fact)
+func WithMemoryTools() AgentOption {
+	return func(ca *ChatAgent) error {
+		ca.memoryMode |= MemoryTools
+		return ca.registerMemoryTools()
+	}
+}
+
 // WithMemoryPersistence enables automatic memory saving/loading
 func WithMemoryPersistence(filepath string) AgentOption {
 	return func(ca *ChatAgent) error {
@@ -95,6 +107,98 @@ func WithMemoryPersistence(filepath string) AgentOption {
 		ca.memoryFile = filepath
 		return ca.loadMemory()
 	}
+}
+
+// RegisterTool adds a tool that Gemini can use
+func (ca *ChatAgent) RegisterTool(tool types.Tool) error {
+	if tool.Name == "" {
+		return &errors.ValidationError{
+			Field:   "name",
+			Message: "tool name is required",
+		}
+	}
+	if tool.Description == "" {
+		return &errors.ValidationError{
+			Field:   "description",
+			Message: "tool description is required",
+		}
+	}
+	if tool.Parameters == nil {
+		return &errors.ValidationError{
+			Field:   "parameters",
+			Message: "tool parameters schema is required",
+		}
+	}
+	if tool.Handler == nil {
+		return &errors.ValidationError{
+			Field:   "handler",
+			Message: "tool handler is required",
+		}
+	}
+
+	ca.tools[tool.Name] = tool
+	return nil
+}
+
+// registerMemoryTools adds remember_fact and recall_fact tools
+func (ca *ChatAgent) registerMemoryTools() error {
+	// Remember tool
+	rememberTool := types.Tool{
+		Name:        "remember_fact",
+		Description: "Store important information about the user for future conversations",
+		Parameters: map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"key": map[string]interface{}{
+					"type":        "string",
+					"description": "What to remember (e.g., 'favorite_color', 'job_title', 'preference')",
+				},
+				"value": map[string]interface{}{
+					"type":        "string",
+					"description": "The information to remember",
+				},
+			},
+			"required":             []string{"key", "value"},
+			"additionalProperties": false,
+		},
+		Handler: func(input map[string]interface{}) (string, error) {
+			key := input["key"].(string)
+			value := input["value"].(string)
+			err := ca.Remember(key, value)
+			if err != nil {
+				return "", fmt.Errorf("failed to remember %s: %w", key, err)
+			}
+			return fmt.Sprintf("I'll remember that %s: %s", key, value), nil
+		},
+	}
+
+	// Recall tool
+	recallTool := types.Tool{
+		Name:        "recall_fact",
+		Description: "Retrieve previously stored information about the user",
+		Parameters: map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"key": map[string]interface{}{
+					"type":        "string",
+					"description": "What to recall (e.g., 'favorite_color', 'job_title', 'preference')",
+				},
+			},
+			"required":             []string{"key"},
+			"additionalProperties": false,
+		},
+		Handler: func(input map[string]interface{}) (string, error) {
+			key := input["key"].(string)
+			if value, exists := ca.memory[key]; exists {
+				return value, nil
+			}
+			return fmt.Sprintf("I don't have any information stored about %s", key), nil
+		},
+	}
+
+	ca.RegisterTool(rememberTool)
+	ca.RegisterTool(recallTool)
+	return nil
 }
 
 // buildSystemPromptWithMemory combines memory context with user system prompt
@@ -169,25 +273,39 @@ func (ca *ChatAgent) Chat(message string, opts ...*ChatOptions) (*ChatResponse, 
 	}
 	ca.messages = append(ca.messages, userContent)
 
-	// Send request to Google
-	response, err := ca.sendRequest(options)
-	if err != nil {
-		return nil, fmt.Errorf("sending request: %w", err)
-	}
-
-	// Add Google's response to conversation history if we have candidates
-	if len(response.Candidates) > 0 {
-		assistantContent := types.Content{
-			Role:  "model",
-			Parts: response.Candidates[0].Content.Parts,
+	// Continue conversation until we get a final response
+	for {
+		// Send request to Gemini
+		response, err := ca.sendRequest(options)
+		if err != nil {
+			return nil, fmt.Errorf("sending request: %w", err)
 		}
-		ca.messages = append(ca.messages, assistantContent)
-	}
 
-	return &ChatResponse{
-		Text: ca.extractTextResponse(response),
-		Raw:  response,
-	}, nil
+		// Add Gemini's response to conversation history
+		if len(response.Candidates) > 0 {
+			assistantContent := types.Content{
+				Role:  "model",
+				Parts: response.Candidates[0].Content.Parts,
+			}
+			ca.messages = append(ca.messages, assistantContent)
+		}
+
+		// Check if Gemini wants to use tools
+		toolCalls := ca.extractToolCalls(response)
+		if len(toolCalls) == 0 {
+			// No tool calls - return the response
+			return &ChatResponse{
+				Text: ca.extractTextResponse(response),
+				Raw:  response,
+			}, nil
+		}
+
+		// Execute tools and add results to conversation
+		err = ca.executeToolCalls(toolCalls)
+		if err != nil {
+			return nil, fmt.Errorf("executing tools: %w", err)
+		}
+	}
 }
 
 // sendRequest sends the current conversation to Google
@@ -220,6 +338,21 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.GoogleResponse, e
 	requestBody := types.GoogleRequest{
 		Contents:         ca.messages,
 		GenerationConfig: genConfig,
+	}
+
+	// Add tools if any are registered
+	if len(ca.tools) > 0 {
+		var toolDeclarations []types.FunctionDeclaration
+		for _, tool := range ca.tools {
+			toolDeclarations = append(toolDeclarations, types.FunctionDeclaration{
+				Name:        tool.Name,
+				Description: tool.Description,
+				Parameters:  tool.Parameters,
+			})
+		}
+		requestBody.Tools = []types.ToolConfig{{
+			FunctionDeclarations: toolDeclarations,
+		}}
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -278,6 +411,19 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.GoogleResponse, e
 	return &googleResp, nil
 }
 
+// extractToolCalls extracts tool calls from Gemini's response
+func (ca *ChatAgent) extractToolCalls(response *types.GoogleResponse) []types.FunctionCall {
+	var toolCalls []types.FunctionCall
+	if len(response.Candidates) > 0 {
+		for _, part := range response.Candidates[0].Content.Parts {
+			if part.FunctionCall != nil {
+				toolCalls = append(toolCalls, *part.FunctionCall)
+			}
+		}
+	}
+	return toolCalls
+}
+
 // extractTextResponse extracts text content from Google's response
 func (ca *ChatAgent) extractTextResponse(response *types.GoogleResponse) string {
 	var textParts []string
@@ -289,6 +435,57 @@ func (ca *ChatAgent) extractTextResponse(response *types.GoogleResponse) string 
 		}
 	}
 	return strings.Join(textParts, " ")
+}
+
+// executeToolCalls executes tool calls and adds results to conversation
+func (ca *ChatAgent) executeToolCalls(toolCalls []types.FunctionCall) error {
+	var toolResults []types.Part
+
+	for _, toolCall := range toolCalls {
+		tool, exists := ca.tools[toolCall.Name]
+		if !exists {
+			return &errors.ValidationError{
+				Field:   "tool",
+				Message: fmt.Sprintf("tool '%s' not found", toolCall.Name),
+			}
+		}
+
+		// Execute the tool
+		start := time.Now()
+		result, err := tool.Handler(toolCall.Args)
+		duration := time.Since(start)
+
+		slog.Debug("Tool execution",
+			slog.String("tool", toolCall.Name),
+			slog.Any("input", toolCall.Args),
+			slog.Duration("duration", duration),
+			slog.String("result", result))
+
+		if err != nil {
+			return fmt.Errorf("executing tool '%s': %w", toolCall.Name, err)
+		}
+
+		// Add tool result to results using Google's function response format
+		toolResults = append(toolResults, types.Part{
+			FunctionResponse: &types.FunctionResponsePart{
+				Name: toolCall.Name,
+				Response: struct {
+					Result interface{} `json:"result"`
+				}{
+					Result: result,
+				},
+			},
+		})
+	}
+
+	// Add tool results as a user message
+	toolMessage := types.Content{
+		Role:  "user",
+		Parts: toolResults,
+	}
+	ca.messages = append(ca.messages, toolMessage)
+
+	return nil
 }
 
 // Remember stores a key-value pair in persistent memory

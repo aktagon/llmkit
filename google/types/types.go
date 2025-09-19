@@ -27,16 +27,19 @@ type Content struct {
 	Parts []Part `json:"parts"`
 }
 
-// Part represents a text or file part of the content
+// Part represents a text, file, or function call part of the content
 type Part struct {
-	Text     string    `json:"text,omitempty"`
-	FileData *FileData `json:"file_data,omitempty"`
+	Text             string                `json:"text,omitempty"`
+	FileData         *FileData             `json:"file_data,omitempty"`
+	FunctionCall     *FunctionCall         `json:"functionCall,omitempty"`
+	FunctionResponse *FunctionResponsePart `json:"functionResponse,omitempty"`
 }
 
 // GoogleRequest represents the request body for Google's API
 type GoogleRequest struct {
 	Contents         []Content        `json:"contents"`
 	GenerationConfig *RequestSettings `json:"generationConfig,omitempty"`
+	Tools            []ToolConfig     `json:"tools,omitempty"`
 }
 
 // Candidate represents a response candidate
@@ -107,4 +110,46 @@ type FileUploadInfo struct {
 // FileUploadResponse wraps the uploaded file
 type FileUploadResponse struct {
 	File File `json:"file"`
+}
+
+// ToolHandler executes tool logic and returns results
+type ToolHandler func(input map[string]interface{}) (string, error)
+
+// Tool represents a tool/function that can be called by Gemini
+type Tool struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Parameters  interface{} `json:"parameters"`
+	Handler     ToolHandler `json:"-"`
+}
+
+// FunctionDeclaration represents a function declaration for Google's tools API
+type FunctionDeclaration struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Parameters  interface{} `json:"parameters"`
+}
+
+// ToolConfig represents the tools configuration in request
+type ToolConfig struct {
+	FunctionDeclarations []FunctionDeclaration `json:"functionDeclarations"`
+}
+
+// FunctionCall represents a function call from Gemini
+type FunctionCall struct {
+	Name string                 `json:"name"`
+	Args map[string]interface{} `json:"args"`
+}
+
+// FunctionCallPart represents a function call in response content
+type FunctionCallPart struct {
+	FunctionCall FunctionCall `json:"functionCall"`
+}
+
+// FunctionResponsePart represents a function response in request content
+type FunctionResponsePart struct {
+	Name     string `json:"name"`
+	Response struct {
+		Result interface{} `json:"result"`
+	} `json:"response"`
 }
