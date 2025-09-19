@@ -23,6 +23,9 @@ const (
 	MemoryContext     MemoryMode = 1 << 0 // Auto-include in system prompts
 	MemoryTools       MemoryMode = 1 << 1 // Expose remember/recall as tools
 	MemoryPersistence MemoryMode = 1 << 2 // Auto-save to disk
+
+	// MaxCacheBreakpoints is the maximum number of cache control blocks allowed by Anthropic
+	MaxCacheBreakpoints = 4
 )
 
 // AgentOption configures the ChatAgent
@@ -45,14 +48,15 @@ type ChatResponse struct {
 
 // ChatAgent maintains conversation state and handles tool execution
 type ChatAgent struct {
-	client     *http.Client
-	apiKey     string
-	model      string
-	messages   []types.Message   // Conversation memory
-	memory     map[string]string // Persistent key-value memory
-	tools      map[string]types.Tool
-	memoryMode MemoryMode // Controls memory behavior
-	memoryFile string     // Path for memory persistence
+	client        *http.Client
+	apiKey        string
+	model         string
+	messages      []types.Message   // Conversation memory
+	memory        map[string]string // Persistent key-value memory
+	tools         map[string]types.Tool
+	memoryMode    MemoryMode // Controls memory behavior
+	memoryFile    string     // Path for memory persistence
+	enableCaching bool       // Controls prompt caching (default: true)
 }
 
 // New creates a new ChatAgent with optional configuration
@@ -65,13 +69,19 @@ func New(apiKey string, opts ...AgentOption) (*ChatAgent, error) {
 	}
 
 	agent := &ChatAgent{
-		client:     httpclient.NewClient(),
-		apiKey:     apiKey,
-		model:      types.Model,
-		messages:   make([]types.Message, 0),
-		memory:     make(map[string]string),
-		tools:      make(map[string]types.Tool),
-		memoryMode: MemoryDisabled,
+		client:        httpclient.NewClient(),
+		apiKey:        apiKey,
+		model:         types.Model,
+		messages:      make([]types.Message, 0),
+		memory:        make(map[string]string),
+		tools:         make(map[string]types.Tool),
+		memoryMode:    MemoryDisabled,
+		enableCaching: true, // Default: enabled
+	}
+
+	// Check environment variable override
+	if v := os.Getenv("LLMKIT_DISABLE_CACHING"); v == "true" {
+		agent.enableCaching = false
 	}
 
 	// Apply options
@@ -106,6 +116,14 @@ func WithMemoryPersistence(filepath string) AgentOption {
 		ca.memoryMode |= MemoryPersistence
 		ca.memoryFile = filepath
 		return ca.loadMemory()
+	}
+}
+
+// WithCaching controls prompt caching (default: enabled)
+func WithCaching(enabled bool) AgentOption {
+	return func(ca *ChatAgent) error {
+		ca.enableCaching = enabled
+		return nil
 	}
 }
 
@@ -340,15 +358,13 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.AnthropicResponse
 		requestBody["temperature"] = options.Temperature
 	}
 
-	// Add system prompt with memory context if provided
+	// Add system prompt with memory context (no caching)
 	if options != nil && options.SystemPrompt != "" {
 		requestBody["system"] = ca.buildSystemPromptWithMemory(options.SystemPrompt)
 	} else if ca.memoryMode&MemoryContext > 0 && len(ca.memory) > 0 {
-		// Include memory even without explicit system prompt
 		requestBody["system"] = ca.buildSystemPromptWithMemory("")
 	}
 
-	// Add tools if any are registered
 	if len(ca.tools) > 0 {
 		tools := make([]map[string]interface{}, 0, len(ca.tools))
 		for _, tool := range ca.tools {
@@ -358,7 +374,34 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.AnthropicResponse
 				"input_schema": tool.InputSchema,
 			})
 		}
+
+		// No caching for tools
+
 		requestBody["tools"] = tools
+	}
+
+	// Apply cache control - limit to MaxCacheBreakpoints
+	if ca.enableCaching && len(messages) > 0 {
+		// Count existing cache control blocks
+		cacheCount := 0
+		for i := range messages {
+			for j := range messages[i].Content {
+				if messages[i].Content[j].CacheControl != nil {
+					cacheCount++
+				}
+			}
+		}
+
+		// Only add cache control if we haven't exceeded the limit
+		if cacheCount < MaxCacheBreakpoints {
+			lastMsg := &messages[len(messages)-1]
+			if len(lastMsg.Content) > 0 {
+				lastContent := &lastMsg.Content[len(lastMsg.Content)-1]
+				if lastContent.CacheControl == nil {
+					lastContent.CacheControl = &types.CacheControl{Type: "ephemeral"}
+				}
+			}
+		}
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -414,6 +457,16 @@ func (ca *ChatAgent) sendRequest(options *ChatOptions) (*types.AnthropicResponse
 			Operation: "parsing response",
 			Err:       err,
 		}
+	}
+
+	// Log cache performance if caching is enabled
+	if ca.enableCaching {
+		usage := anthropicResp.Usage
+		slog.Info("Cache performance",
+			slog.Int("input_tokens", usage.InputTokens),
+			slog.Int("output_tokens", usage.OutputTokens),
+			slog.Int("cache_creation_tokens", usage.CacheCreationInputTokens),
+			slog.Int("cache_read_tokens", usage.CacheReadInputTokens))
 	}
 
 	return &anthropicResp, nil

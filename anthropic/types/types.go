@@ -55,14 +55,20 @@ type ToolCall struct {
 
 // Content represents message content (text, tool use/result, or file)
 type Content struct {
-	Type      string                 `json:"type"`
-	Text      string                 `json:"text,omitempty"`
-	Source    *FileSource            `json:"source,omitempty"`
-	ID        string                 `json:"id,omitempty"`
-	Name      string                 `json:"name,omitempty"`
-	Input     map[string]interface{} `json:"input,omitempty"`
-	ToolUseID string                 `json:"tool_use_id,omitempty"`
-	Content   string                 `json:"content,omitempty"`
+	Type         string                 `json:"type"`
+	Text         string                 `json:"text,omitempty"`
+	Source       *FileSource            `json:"source,omitempty"`
+	ID           string                 `json:"id,omitempty"`
+	Name         string                 `json:"name,omitempty"`
+	Input        map[string]interface{} `json:"input,omitempty"`
+	ToolUseID    string                 `json:"tool_use_id,omitempty"`
+	Content      string                 `json:"content,omitempty"`
+	CacheControl *CacheControl          `json:"cache_control,omitempty"`
+}
+
+// CacheControl controls prompt caching behavior
+type CacheControl struct {
+	Type string `json:"type"` // "ephemeral" for basic caching
 }
 
 // Message represents a conversation message
