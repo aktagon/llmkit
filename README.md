@@ -8,6 +8,7 @@ external dependencies required.
 - **Anthropic Claude** - Chat completions and structured output
 - **OpenAI GPT** - Chat completions and structured output
 - **Google Gemini** - Chat completions and structured output
+- **xAI Grok** - Chat completions and structured output
 
 ## Structure
 
@@ -15,7 +16,8 @@ external dependencies required.
 ├── cmd/                    # Command-line interfaces
 │   ├── llmkit-anthropic/   # Anthropic CLI
 │   ├── llmkit-openai/      # OpenAI CLI
-│   └── llmkit-google/      # Google CLI
+│   ├── llmkit-google/      # Google CLI
+│   └── llmkit-grok/        # Grok CLI
 ├── anthropic/              # Anthropic (Claude) API package
 │   ├── prompt.go           # API implementation
 │   └── README.md           # Usage examples
@@ -23,6 +25,9 @@ external dependencies required.
 │   ├── prompt.go           # API implementation
 │   └── README.md           # Usage examples
 ├── google/                 # Google (Gemini) API package
+│   ├── prompt.go           # API implementation
+│   └── README.md           # Usage examples
+├── grok/                   # xAI (Grok) API package
 │   ├── prompt.go           # API implementation
 │   └── README.md           # Usage examples
 ├── docs/                   # API documentation
@@ -40,7 +45,7 @@ Install using Homebrew:
 brew install aktagon/llmkit/llmkit
 ```
 
-This installs the `llmkit` binary and all provider-specific CLI tools (`llmkit-anthropic`, `llmkit-openai`, `llmkit-google`).
+This installs the `llmkit` binary and all provider-specific CLI tools (`llmkit-anthropic`, `llmkit-openai`, `llmkit-google`, `llmkit-grok`).
 
 ### Install CLI Tools
 
@@ -55,6 +60,9 @@ go install github.com/aktagon/llmkit/cmd/llmkit-openai@latest
 
 # Install Google CLI
 go install github.com/aktagon/llmkit/cmd/llmkit-google@latest
+
+# Install Grok CLI
+go install github.com/aktagon/llmkit/cmd/llmkit-grok@latest
 ```
 
 Make sure your `$GOPATH/bin` is in your `$PATH` to use the installed binaries:
@@ -142,6 +150,24 @@ llmkit-google \
   "You are an expert at structured data extraction." \
   "What's the weather like in San Francisco? I prefer Celsius." \
   "$(cat examples/google/schemas/weather-schema.json)"
+```
+
+### Grok
+
+**Using installed CLI:**
+
+```bash
+export XAI_API_KEY="your-key"
+llmkit-grok "You are helpful" "Hello Grok"
+```
+
+**Structured output:**
+
+```bash
+llmkit-grok \
+  "You are an expert at structured data extraction." \
+  "What's the weather like in San Francisco? I prefer Celsius." \
+  "$(cat examples/grok/schemas/weather-schema.json)"
 ```
 
 ## API
