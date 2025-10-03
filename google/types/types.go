@@ -10,6 +10,9 @@ const (
 
 	// Model is the default Gemini model to use
 	Model = "gemini-2.5-flash"
+
+	// ImageModel is the default Gemini image generation model
+	ImageModel = "gemini-2.5-flash-image"
 )
 
 // RequestSettings contains configuration for API requests
@@ -30,7 +33,8 @@ type Content struct {
 // Part represents a text, file, or function call part of the content
 type Part struct {
 	Text             string                `json:"text,omitempty"`
-	FileData         *FileData             `json:"file_data,omitempty"`
+	InlineData       *InlineData           `json:"inlineData,omitempty"`
+	FileData         *FileData             `json:"fileData,omitempty"`
 	FunctionCall     *FunctionCall         `json:"functionCall,omitempty"`
 	FunctionResponse *FunctionResponsePart `json:"functionResponse,omitempty"`
 }
@@ -93,8 +97,14 @@ type File struct {
 
 // FileData represents a file reference in content
 type FileData struct {
-	MimeType string `json:"mime_type"`
-	FileURI  string `json:"file_uri"`
+	MimeType string `json:"mimeType"`
+	FileURI  string `json:"fileUri"`
+}
+
+// InlineData represents inline data (like base64 encoded images)
+type InlineData struct {
+	MimeType string `json:"mimeType"`
+	Data     []byte `json:"data"`
 }
 
 // FileUploadRequest represents the initial upload request
