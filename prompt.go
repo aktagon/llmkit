@@ -8,6 +8,7 @@ import (
 	"github.com/aktagon/llmkit/anthropic"
 	"github.com/aktagon/llmkit/errors"
 	"github.com/aktagon/llmkit/google"
+	"github.com/aktagon/llmkit/grok"
 	"github.com/aktagon/llmkit/httpclient"
 	"github.com/aktagon/llmkit/internal"
 	"github.com/aktagon/llmkit/openai"
@@ -20,6 +21,7 @@ const (
 	ProviderOpenAI    Provider = "openai"
 	ProviderAnthropic Provider = "anthropic"
 	ProviderGoogle    Provider = "google"
+	ProviderGrok      Provider = "grok"
 )
 
 // PromptOptions configures the prompt request
@@ -85,6 +87,8 @@ func (c *client) Prompt(ctx context.Context, opts PromptOptions) (string, error)
 		provider = anthropic.NewProvider()
 	case ProviderGoogle:
 		provider = google.NewProvider()
+	case ProviderGrok:
+		provider = grok.NewProvider()
 	default:
 		return "", &errors.ValidationError{
 			Field:   "provider",
@@ -131,6 +135,17 @@ func PromptAnthropic(systemPrompt, userPrompt, jsonSchema, apiKey string) (strin
 func PromptGoogle(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
 	return Prompt(PromptOptions{
 		Provider:     ProviderGoogle,
+		SystemPrompt: systemPrompt,
+		UserPrompt:   userPrompt,
+		JSONSchema:   jsonSchema,
+		APIKey:       apiKey,
+	})
+}
+
+// PromptGrok is a convenience function for Grok prompts
+func PromptGrok(systemPrompt, userPrompt, jsonSchema, apiKey string) (string, error) {
+	return Prompt(PromptOptions{
+		Provider:     ProviderGrok,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		JSONSchema:   jsonSchema,

@@ -4,7 +4,7 @@
 all: build
 
 # Build all commands
-build: llmkit llmkit-openai llmkit-anthropic llmkit-google
+build: llmkit llmkit-openai llmkit-anthropic llmkit-google llmkit-grok
 
 # Build unified llmkit command
 llmkit:
@@ -21,6 +21,10 @@ llmkit-anthropic:
 # Build Google-specific command
 llmkit-google:
 	go build -o bin/llmkit-google ./cmd/llmkit-google
+
+# Build Grok-specific command
+llmkit-grok:
+	go build -o bin/llmkit-grok ./cmd/llmkit-grok
 
 # Clean build artifacts
 clean:
@@ -44,6 +48,7 @@ install:
 	go install ./cmd/llmkit-openai
 	go install ./cmd/llmkit-anthropic
 	go install ./cmd/llmkit-google
+	go install ./cmd/llmkit-grok
 
 # Compile all examples
 compile-examples:
