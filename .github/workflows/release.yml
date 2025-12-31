@@ -1,0 +1,142 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+
+      - name: Get current version
+        id: current_version
+        run: |
+          if git tag -l | grep -q "^v"; then
+            CURRENT_VERSION=$(git tag -l "v*" | sort -V | tail -n 1)
+          else
+            CURRENT_VERSION="v0.0.0"
+          fi
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Increment version
+        id: increment_version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+          if [[ "$CURRENT_VERSION" == "v0.0.0" ]]; then
+            NEW_VERSION="v0.1.0"
+          else
+            # Remove 'v' prefix and split version
+            VERSION=${CURRENT_VERSION#v}
+            IFS='.' read -r major minor patch <<< "$VERSION"
+            # Increment patch version
+            NEW_VERSION="v$major.$minor.$((patch + 1))"
+          fi
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build binaries
+        run: |
+          # Linux
+          GOOS=linux GOARCH=amd64 go build -o llmkit-linux-amd64 ./cmd/llmkit
+          # macOS
+          GOOS=darwin GOARCH=amd64 go build -o llmkit-darwin-amd64 ./cmd/llmkit
+          GOOS=darwin GOARCH=arm64 go build -o llmkit-darwin-arm64 ./cmd/llmkit
+          # Windows
+          GOOS=windows GOARCH=amd64 go build -o llmkit-windows-amd64.exe ./cmd/llmkit
+
+      - name: Run tests
+        run: |
+          make test
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.increment_version.outputs.new_version }}
+          git push origin ${{ steps.increment_version.outputs.new_version }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.increment_version.outputs.new_version }}
+          release_name: Release ${{ steps.increment_version.outputs.new_version }}
+          body: |
+            ## What's Changed
+
+            Automatic release created from commit ${{ github.sha }}
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.current_version.outputs.version }}...${{ steps.increment_version.outputs.new_version }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./llmkit-linux-amd64
+          asset_name: llmkit-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS Intel binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./llmkit-darwin-amd64
+          asset_name: llmkit-darwin-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS ARM binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./llmkit-darwin-arm64
+          asset_name: llmkit-darwin-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./llmkit-windows-amd64.exe
+          asset_name: llmkit-windows-amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Update Homebrew Formula
+        run: |
+          # Calculate SHA256 of the source tarball
+          TARBALL_URL="https://github.com/aktagon/llmkit/archive/refs/tags/${{ steps.increment_version.outputs.new_version }}.tar.gz"
+          SHA256=$(curl -sL "$TARBALL_URL" | sha256sum | cut -d' ' -f1)
+
+          # Update the formula
+          sed -i "s|url \".*\"|url \"$TARBALL_URL\"|" Formula/llmkit.rb
+          sed -i "s|version \".*\"|version \"${{ steps.increment_version.outputs.new_version }}\"|" Formula/llmkit.rb
+          sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/llmkit.rb
+
+          # Commit and push the changes
+          git add Formula/llmkit.rb
+          git commit -m "Update Homebrew formula to ${{ steps.increment_version.outputs.new_version }}"
+          git push origin master
