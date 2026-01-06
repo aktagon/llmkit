@@ -2,118 +2,115 @@ package llmkit
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
-	"os"
+	"net/http/httptest"
 	"testing"
 )
 
-func TestPromptGrok_Chat(t *testing.T) {
-	rec, stop := newRecorder(t, "grok-chat")
-	defer stop()
+func TestPromptGrok_ResponsesAPI_WithFiles(t *testing.T) {
+	var capturedPath string
+	var capturedBody []byte
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		capturedBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+		// Responses API format
+		w.Write([]byte(`{
+			"id": "resp_123",
+			"output": [{"type": "message", "content": [{"type": "output_text", "text": "PDF summary"}]}],
+			"usage": {"input_tokens": 100, "output_tokens": 50}
+		}`))
+	}))
+	defer server.Close()
 
 	p := Provider{
-		Name:   Grok,
-		APIKey: os.Getenv("XAI_API_KEY"),
-	}
-	if p.APIKey == "" {
-		p.APIKey = "test-key"
+		Name:    Grok,
+		APIKey:  "test-key",
+		BaseURL: server.URL,
 	}
 
 	req := Request{
-		User: "Say hello in exactly 3 words",
+		System: "Summarize documents",
+		User:   "Summarize this PDF",
+		Files:  []File{{ID: "file-123", MimeType: "application/pdf"}},
 	}
 
-	resp, err := Prompt(context.Background(), p, req,
-		WithHTTPClient(&http.Client{Transport: rec}),
-	)
+	resp, err := Prompt(context.Background(), p, req)
 	if err != nil {
 		t.Fatalf("Prompt() error = %v", err)
 	}
 
-	if resp.Text == "" {
-		t.Error("expected non-empty response text")
+	// Should use Responses API endpoint when files attached
+	if capturedPath != "/v1/responses" {
+		t.Errorf("path = %q, want /v1/responses", capturedPath)
 	}
-	if resp.Tokens.Input == 0 {
-		t.Error("expected non-zero input tokens")
+
+	// Verify request format uses input_file (not nested file object)
+	var body map[string]any
+	if err := json.Unmarshal(capturedBody, &body); err != nil {
+		t.Fatalf("unmarshal body: %v", err)
 	}
-	if resp.Tokens.Output == 0 {
-		t.Error("expected non-zero output tokens")
+
+	input, ok := body["input"].([]any)
+	if !ok {
+		t.Fatalf("expected input array, got %T", body["input"])
+	}
+
+	// Find the file input
+	var foundFile bool
+	for _, item := range input {
+		m := item.(map[string]any)
+		if m["type"] == "input_file" && m["file_id"] == "file-123" {
+			foundFile = true
+		}
+	}
+	if !foundFile {
+		t.Errorf("expected input_file with file_id, got: %s", capturedBody)
+	}
+
+	if resp.Text != "PDF summary" {
+		t.Errorf("text = %q, want 'PDF summary'", resp.Text)
+	}
+	if resp.Tokens.Input != 100 || resp.Tokens.Output != 50 {
+		t.Errorf("tokens = %+v, want input=100, output=50", resp.Tokens)
 	}
 }
 
-func TestPromptGrok_WithSystem(t *testing.T) {
-	rec, stop := newRecorder(t, "grok-chat-system")
-	defer stop()
+func TestPromptGrok_ResponsesAPI_TextOnly(t *testing.T) {
+	var capturedPath string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		// Responses API format
+		w.Write([]byte(`{
+			"id": "resp_456",
+			"output": [{"type": "message", "content": [{"type": "output_text", "text": "Hello!"}]}],
+			"usage": {"input_tokens": 10, "output_tokens": 5}
+		}`))
+	}))
+	defer server.Close()
 
 	p := Provider{
-		Name:   Grok,
-		APIKey: os.Getenv("XAI_API_KEY"),
-	}
-	if p.APIKey == "" {
-		p.APIKey = "test-key"
+		Name:    Grok,
+		APIKey:  "test-key",
+		BaseURL: server.URL,
 	}
 
 	req := Request{
-		System: "You are a pirate. Respond in pirate speak.",
-		User:   "Hello",
+		User: "Say hello",
 	}
 
-	resp, err := Prompt(context.Background(), p, req,
-		WithHTTPClient(&http.Client{Transport: rec}),
-	)
+	_, err := Prompt(context.Background(), p, req)
 	if err != nil {
 		t.Fatalf("Prompt() error = %v", err)
 	}
 
-	if resp.Text == "" {
-		t.Error("expected non-empty response text")
-	}
-}
-
-func TestBuildGrokContent(t *testing.T) {
-	tests := []struct {
-		name      string
-		req       Request
-		wantLen   int
-		wantTypes []string
-	}{
-		{
-			name:      "text only",
-			req:       Request{User: "hello"},
-			wantLen:   1,
-			wantTypes: []string{"text"},
-		},
-		{
-			name: "image and text",
-			req: Request{
-				User:   "describe this",
-				Images: []Image{{URL: "https://example.com/img.jpg", MimeType: "image/jpeg"}},
-			},
-			wantLen:   2,
-			wantTypes: []string{"image_url", "text"},
-		},
-		{
-			name: "file and text",
-			req: Request{
-				User:  "summarize this",
-				Files: []File{{ID: "file-123", MimeType: "application/pdf"}},
-			},
-			wantLen:   2,
-			wantTypes: []string{"file", "text"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			content := buildGrokContent(tt.req)
-			if len(content) != tt.wantLen {
-				t.Errorf("got %d parts, want %d", len(content), tt.wantLen)
-			}
-			for i, wantType := range tt.wantTypes {
-				if i < len(content) && content[i].Type != wantType {
-					t.Errorf("part %d: got type %q, want %q", i, content[i].Type, wantType)
-				}
-			}
-		})
+	// Always use Responses API (xAI's preferred endpoint)
+	if capturedPath != "/v1/responses" {
+		t.Errorf("path = %q, want /v1/responses", capturedPath)
 	}
 }

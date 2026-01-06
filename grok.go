@@ -6,22 +6,21 @@ import (
 )
 
 const (
-	grokChatPath  = "/v1/chat/completions"
+	// grokResponsesPath is xAI's preferred endpoint, supports files and text.
+	// See: https://docs.x.ai/docs/api-reference#chat-responses
+	grokResponsesPath = "/v1/responses"
+	// grokFilesPath is for uploading files before referencing in prompts.
 	grokFilesPath = "/v1/files"
 )
 
-// Grok uses OpenAI-compatible API format
-type grokRequest struct {
-	Model            string              `json:"model"`
-	Messages         []grokMessage       `json:"messages"`
-	ResponseFormat   *grokResponseFormat `json:"response_format,omitempty"`
-	Temperature      *float64            `json:"temperature,omitempty"`
-	TopP             *float64            `json:"top_p,omitempty"`
-	MaxTokens        *int                `json:"max_tokens,omitempty"`
-	Stop             []string            `json:"stop,omitempty"`
-	Seed             *int64              `json:"seed,omitempty"`
-	FrequencyPenalty *float64            `json:"frequency_penalty,omitempty"`
-	PresencePenalty  *float64            `json:"presence_penalty,omitempty"`
+// Responses API request types
+type grokResponsesRequest struct {
+	Model          string               `json:"model"`
+	Instructions   string               `json:"instructions,omitempty"`
+	Input          []grokResponsesInput `json:"input"`
+	ResponseFormat *grokResponseFormat  `json:"response_format,omitempty"`
+	Temperature    *float64             `json:"temperature,omitempty"`
+	MaxTokens      *int                 `json:"max_output_tokens,omitempty"`
 }
 
 type grokResponseFormat struct {
@@ -35,68 +34,51 @@ type grokJSONSchema struct {
 	Strict bool   `json:"strict"`
 }
 
-type grokMessage struct {
-	Role    string         `json:"role"`
-	Content []grokContent  `json:"content"`
+type grokResponsesInput struct {
+	Type   string `json:"type"`
+	Text   string `json:"text,omitempty"`
+	FileID string `json:"file_id,omitempty"`
 }
 
-type grokContent struct {
-	Type     string        `json:"type"`
-	Text     string        `json:"text,omitempty"`
-	ImageURL *grokImageURL `json:"image_url,omitempty"`
-	File     *grokFile     `json:"file,omitempty"`
-}
-
-type grokFile struct {
-	FileID string `json:"file_id"`
-}
-
-type grokImageURL struct {
-	URL    string `json:"url"`
-	Detail string `json:"detail,omitempty"`
-}
-
-type grokResponse struct {
-	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-	} `json:"choices"`
+type grokResponsesResponse struct {
+	Output []struct {
+		Type    string `json:"type"`
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+	} `json:"output"`
 	Usage struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
+		InputTokens  int `json:"input_tokens"`
+		OutputTokens int `json:"output_tokens"`
 	} `json:"usage"`
 }
 
 func promptGrok(ctx context.Context, p Provider, req Request, o *options) (Response, error) {
-	var msgs []grokMessage
-	if req.System != "" {
-		msgs = append(msgs, grokMessage{
-			Role:    "system",
-			Content: []grokContent{{Type: "text", Text: req.System}},
+	var input []grokResponsesInput
+
+	// Add files as input_file
+	for _, f := range req.Files {
+		input = append(input, grokResponsesInput{
+			Type:   "input_file",
+			FileID: f.ID,
 		})
 	}
-	if len(req.Messages) > 0 {
-		for _, m := range req.Messages {
-			msgs = append(msgs, grokMessage{
-				Role:    m.Role,
-				Content: []grokContent{{Type: "text", Text: m.Content}},
-			})
-		}
-	} else {
-		msgs = append(msgs, grokMessage{Role: "user", Content: buildGrokContent(req)})
+
+	// Add user text as input_text
+	if req.User != "" {
+		input = append(input, grokResponsesInput{
+			Type: "input_text",
+			Text: req.User,
+		})
 	}
 
-	payload := grokRequest{
-		Model:            p.model(),
-		Messages:         msgs,
-		Temperature:      o.temperature,
-		TopP:             o.topP,
-		MaxTokens:        o.maxTokens,
-		Stop:             o.stopSequences,
-		Seed:             o.seed,
-		FrequencyPenalty: o.frequencyPenalty,
-		PresencePenalty:  o.presencePenalty,
+	payload := grokResponsesRequest{
+		Model:        p.model(),
+		Instructions: req.System,
+		Input:        input,
+		Temperature:  o.temperature,
+		MaxTokens:    o.maxTokens,
 	}
 
 	if req.Schema != "" {
@@ -123,7 +105,7 @@ func promptGrok(ctx context.Context, p Provider, req Request, o *options) (Respo
 		"Authorization": "Bearer " + p.APIKey,
 	}
 
-	respBody, statusCode, err := doPostRaw(ctx, o.httpClient, p.buildURL(grokChatPath), body, headers)
+	respBody, statusCode, err := doPostRaw(ctx, o.httpClient, p.buildURL(grokResponsesPath), body, headers)
 	if err != nil {
 		return Response{}, err
 	}
@@ -132,58 +114,24 @@ func promptGrok(ctx context.Context, p Provider, req Request, o *options) (Respo
 		return Response{}, parseError(Grok, statusCode, respBody, nil)
 	}
 
-	var resp grokResponse
+	var resp grokResponsesResponse
 	if err := json.Unmarshal(respBody, &resp); err != nil {
 		return Response{}, err
 	}
 
+	// Extract text from Responses API format
 	text := ""
-	if len(resp.Choices) > 0 {
-		text = resp.Choices[0].Message.Content
+	if len(resp.Output) > 0 && len(resp.Output[0].Content) > 0 {
+		text = resp.Output[0].Content[0].Text
 	}
 
 	return Response{
 		Text: text,
 		Tokens: Usage{
-			Input:  resp.Usage.PromptTokens,
-			Output: resp.Usage.CompletionTokens,
+			Input:  resp.Usage.InputTokens,
+			Output: resp.Usage.OutputTokens,
 		},
 	}, nil
-}
-
-// buildGrokContent creates content array from request.
-func buildGrokContent(req Request) []grokContent {
-	var content []grokContent
-
-	// Add files first
-	for _, f := range req.Files {
-		content = append(content, grokContent{
-			Type: "file",
-			File: &grokFile{FileID: f.ID},
-		})
-	}
-
-	// Add images
-	for _, img := range req.Images {
-		c := grokContent{
-			Type: "image_url",
-			ImageURL: &grokImageURL{
-				URL:    img.URL,
-				Detail: img.Detail,
-			},
-		}
-		if c.ImageURL.Detail == "" {
-			c.ImageURL.Detail = "auto"
-		}
-		content = append(content, c)
-	}
-
-	// Add text
-	if req.User != "" {
-		content = append(content, grokContent{Type: "text", Text: req.User})
-	}
-
-	return content
 }
 
 type grokFileResponse struct {
