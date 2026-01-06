@@ -70,3 +70,43 @@ func TestDoPost_ContextCanceled(t *testing.T) {
 		t.Error("doPost() expected error for canceled context")
 	}
 }
+
+func TestDoMultipartPost_SetsMimeType(t *testing.T) {
+	var capturedMimeType string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("Method = %s, want POST", r.Method)
+		}
+
+		// Parse multipart form
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			t.Fatalf("ParseMultipartForm error: %v", err)
+		}
+
+		// Check file MIME type from multipart header
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			t.Fatalf("FormFile error: %v", err)
+		}
+		defer file.Close()
+
+		capturedMimeType = header.Header.Get("Content-Type")
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	}))
+	defer server.Close()
+
+	client := server.Client()
+	// Filename has .pdf extension, so MIME type should be auto-detected
+	_, _, err := doMultipartPost(context.Background(), client, server.URL,
+		"file", "test.pdf", []byte("PDF content"), nil, nil)
+	if err != nil {
+		t.Fatalf("doMultipartPost() error = %v", err)
+	}
+
+	if capturedMimeType != "application/pdf" {
+		t.Errorf("MIME type = %q, want application/pdf", capturedMimeType)
+	}
+}
