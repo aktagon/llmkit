@@ -16,7 +16,6 @@ const (
 // Responses API request types
 type grokResponsesRequest struct {
 	Model          string               `json:"model"`
-	Instructions   string               `json:"instructions,omitempty"`
 	Input          []grokResponsesInput `json:"input"`
 	ResponseFormat *grokResponseFormat  `json:"response_format,omitempty"`
 	Temperature    *float64             `json:"temperature,omitempty"`
@@ -35,6 +34,11 @@ type grokJSONSchema struct {
 }
 
 type grokResponsesInput struct {
+	Role    string `json:"role"`
+	Content any    `json:"content"` // string or []grokContentPart
+}
+
+type grokContentPart struct {
 	Type   string `json:"type"`
 	Text   string `json:"text,omitempty"`
 	FileID string `json:"file_id,omitempty"`
@@ -57,28 +61,49 @@ type grokResponsesResponse struct {
 func promptGrok(ctx context.Context, p Provider, req Request, o *options) (Response, error) {
 	var input []grokResponsesInput
 
-	// Add files as input_file
-	for _, f := range req.Files {
+	// Add system message if present
+	if req.System != "" {
 		input = append(input, grokResponsesInput{
-			Type:   "input_file",
-			FileID: f.ID,
+			Role:    "system",
+			Content: req.System,
 		})
 	}
 
-	// Add user text as input_text
-	if req.User != "" {
-		input = append(input, grokResponsesInput{
-			Type: "input_text",
-			Text: req.User,
-		})
+	// Build user content (text and/or files)
+	if req.User != "" || len(req.Files) > 0 {
+		if len(req.Files) == 0 {
+			// Simple text-only message
+			input = append(input, grokResponsesInput{
+				Role:    "user",
+				Content: req.User,
+			})
+		} else {
+			// Mixed content with files
+			var parts []grokContentPart
+			for _, f := range req.Files {
+				parts = append(parts, grokContentPart{
+					Type:   "file",
+					FileID: f.ID,
+				})
+			}
+			if req.User != "" {
+				parts = append(parts, grokContentPart{
+					Type: "text",
+					Text: req.User,
+				})
+			}
+			input = append(input, grokResponsesInput{
+				Role:    "user",
+				Content: parts,
+			})
+		}
 	}
 
 	payload := grokResponsesRequest{
-		Model:        p.model(),
-		Instructions: req.System,
-		Input:        input,
-		Temperature:  o.temperature,
-		MaxTokens:    o.maxTokens,
+		Model:       p.model(),
+		Input:       input,
+		Temperature: o.temperature,
+		MaxTokens:   o.maxTokens,
 	}
 
 	if req.Schema != "" {

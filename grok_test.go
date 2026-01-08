@@ -43,12 +43,12 @@ func TestPromptGrok_ResponsesAPI_WithFiles(t *testing.T) {
 		t.Fatalf("Prompt() error = %v", err)
 	}
 
-	// Should use Responses API endpoint when files attached
+	// Should use Responses API endpoint
 	if capturedPath != "/v1/responses" {
 		t.Errorf("path = %q, want /v1/responses", capturedPath)
 	}
 
-	// Verify request format uses input_file (not nested file object)
+	// Verify request format uses role/content (new API format)
 	var body map[string]any
 	if err := json.Unmarshal(capturedBody, &body); err != nil {
 		t.Fatalf("unmarshal body: %v", err)
@@ -59,16 +59,32 @@ func TestPromptGrok_ResponsesAPI_WithFiles(t *testing.T) {
 		t.Fatalf("expected input array, got %T", body["input"])
 	}
 
-	// Find the file input
-	var foundFile bool
-	for _, item := range input {
-		m := item.(map[string]any)
-		if m["type"] == "input_file" && m["file_id"] == "file-123" {
-			foundFile = true
-		}
+	// Should have system message and user message with file
+	if len(input) != 2 {
+		t.Fatalf("expected 2 input messages, got %d: %s", len(input), capturedBody)
 	}
-	if !foundFile {
-		t.Errorf("expected input_file with file_id, got: %s", capturedBody)
+
+	// Check system message
+	sysMsg := input[0].(map[string]any)
+	if sysMsg["role"] != "system" {
+		t.Errorf("first message role = %q, want 'system'", sysMsg["role"])
+	}
+	if sysMsg["content"] != "Summarize documents" {
+		t.Errorf("system content = %q, want 'Summarize documents'", sysMsg["content"])
+	}
+
+	// Check user message with file content
+	userMsg := input[1].(map[string]any)
+	if userMsg["role"] != "user" {
+		t.Errorf("second message role = %q, want 'user'", userMsg["role"])
+	}
+	// Content should be array with file and text parts
+	content, ok := userMsg["content"].([]any)
+	if !ok {
+		t.Fatalf("user content should be array, got %T", userMsg["content"])
+	}
+	if len(content) != 2 {
+		t.Fatalf("expected 2 content parts, got %d", len(content))
 	}
 
 	if resp.Text != "PDF summary" {
@@ -81,9 +97,11 @@ func TestPromptGrok_ResponsesAPI_WithFiles(t *testing.T) {
 
 func TestPromptGrok_ResponsesAPI_TextOnly(t *testing.T) {
 	var capturedPath string
+	var capturedBody []byte
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
+		capturedBody, _ = io.ReadAll(r.Body)
 		w.WriteHeader(http.StatusOK)
 		// Responses API format
 		w.Write([]byte(`{
@@ -101,7 +119,8 @@ func TestPromptGrok_ResponsesAPI_TextOnly(t *testing.T) {
 	}
 
 	req := Request{
-		User: "Say hello",
+		System: "Be friendly",
+		User:   "Say hello",
 	}
 
 	_, err := Prompt(context.Background(), p, req)
@@ -112,5 +131,36 @@ func TestPromptGrok_ResponsesAPI_TextOnly(t *testing.T) {
 	// Always use Responses API (xAI's preferred endpoint)
 	if capturedPath != "/v1/responses" {
 		t.Errorf("path = %q, want /v1/responses", capturedPath)
+	}
+
+	// Verify request format uses role/content
+	var body map[string]any
+	if err := json.Unmarshal(capturedBody, &body); err != nil {
+		t.Fatalf("unmarshal body: %v", err)
+	}
+
+	input, ok := body["input"].([]any)
+	if !ok {
+		t.Fatalf("expected input array, got %T", body["input"])
+	}
+
+	// Should have system and user messages
+	if len(input) != 2 {
+		t.Fatalf("expected 2 input messages, got %d: %s", len(input), capturedBody)
+	}
+
+	// Check system message
+	sysMsg := input[0].(map[string]any)
+	if sysMsg["role"] != "system" {
+		t.Errorf("first message role = %q, want 'system'", sysMsg["role"])
+	}
+
+	// Check user message - content should be string for text-only
+	userMsg := input[1].(map[string]any)
+	if userMsg["role"] != "user" {
+		t.Errorf("second message role = %q, want 'user'", userMsg["role"])
+	}
+	if userMsg["content"] != "Say hello" {
+		t.Errorf("user content = %q, want 'Say hello'", userMsg["content"])
 	}
 }
